@@ -4,8 +4,9 @@ import java.io.*;
 public class CSC350P2 {
 
 	static final short STARTING_MEMORY_LOCATION = 0x0600;
-	static final short STARTING_STACK_LOCATION = 0x0100;	
+	static final short STARTING_STACK_LOCATION = 0x01FF;	
 	static final int TOTAL_MEMORY = 65536; 	// 4KB
+	static final short STACK_SIZE = 256;	// 256 bytes
 	
 	public static void main (String [] args) {
 		// initialize registers	
@@ -33,7 +34,7 @@ public class CSC350P2 {
 		// open assembly code
 		Scanner scanner = null;
 		try {
-			scanner = new Scanner (new File ("program1.asm"));
+			scanner = new Scanner (new File ("program2.asm"));
 		} catch (Exception e) {
 			System.out.println("Error: Couldn't open file");
 			System.exit(0);
@@ -94,6 +95,7 @@ public class CSC350P2 {
 			byte opcode = memory[PC++];		// contains instruction type	
 			byte data1;		// first byte of data
 			byte data2;		// second byte of data
+			byte tmp;
 			
 			// 2. find instruction
 			switch (opcode) {
@@ -438,40 +440,321 @@ public class CSC350P2 {
 				case (byte) 0x9A:
 					SP = X;
 					break;
-						
+					
+				// -------------------- PHA - Push Accumulator --------------------	
+				case (byte) 0x48:
+					memory[STARTING_STACK_LOCATION - SP++] = AC;				
+					break;
+					
+				// -------------------- PHP - Push Processor Status --------------------	
+				case (byte) 0x08:
+					memory[STARTING_STACK_LOCATION - SP++] = flagsToByte(N, V, G, B, D, I, Z, C);			
+					break;
+			
+				// -------------------- PLA - Pull Accumulator --------------------	
+				case (byte) 0x68:
+					AC = memory[STARTING_STACK_LOCATION - SP--];	
+					// update flags
+					Z = updateZFlag(AC);
+					N = updateNFlag(AC);					
+					break;					
+					
+				// -------------------- PLP - Pull Processor Status --------------------	
+				case (byte) 0x28:
+					tmp = memory[STARTING_STACK_LOCATION - SP--];
+					C = (((byte)tmp & 1) == 1)? true : false;
+					Z = (((byte)tmp & 2) == 1)? true : false;
+					I = (((byte)tmp & 4) == 1)? true : false;
+					D = (((byte)tmp & 8) == 1)? true : false;
+					B = (((byte)tmp & 16) == 1)? true : false;
+					G = (((byte)tmp & 32) == 1)? true : false;
+					V = (((byte)tmp & 64) == 1)? true : false;
+					N = (((byte)tmp & 128) == 1)? true : false;															
+					break;					
+					
 				// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
 				// Logical operations 
-				// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *					
+				// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+				// -------------------- AND - Logical AND --------------------						
 				case (byte) 0x29:
-					// AND - Logical And - immediate
-					data1 =  memory[PC++];
-					
+					// AND - Logical AND - immediate
+					data1 =  memory[PC++];	
 					AC = (byte) (AC & data1);
 					
 					// update flags
 					Z = updateZFlag(AC);
 					N = updateNFlag(AC);				
 					break;					
-				case (byte) 0x49:
-					// EOR - Exclusive Or - immediate
-					data1 =  memory[PC++];
 					
+				case (byte) 0x25:
+					// AND - Logical AND - Zero Page
+					data1 = memory[PC++];
+					AC = (byte) (AC & memory[data1]);	
+					
+					// update flags
+					Z = updateZFlag(AC);
+					N = updateNFlag(AC);	
+					break;	
+					
+				case (byte) 0x35:
+					// AND - Logical AND - Zero Page, X
+					data1 = memory[PC++];
+					AC = (byte) (AC & memory[data1 + X]);
+					
+					// update flags
+					Z = updateZFlag(AC);
+					N = updateNFlag(AC);	
+					break;				
+					
+				case (byte) 0x2D:
+					// AND - Logical AND - Absolute (16-bit address)
+					data1 = memory[PC++];
+					data2 = memory[PC++];	
+					AC = (byte)(AC & memory[twoBytesToShort(data1, data2)]);
+					
+					// update flags
+					Z = updateZFlag(AC);
+					N = updateNFlag(AC);	
+					break;
+					
+				case (byte) 0x3D:
+					// AND - Logical AND - Absolute,X (16-bit address)
+					data1 = memory[PC++];
+					data2 = memory[PC++];
+					AC = (byte)(AC & memory[X + twoBytesToShort(data1, data2)]);
+					
+					// update flags
+					Z = updateZFlag(AC);
+					N = updateNFlag(AC);					
+					break;
+					
+				case (byte) 0x39:
+					// AND - Logical AND - Absolute,Y (16-bit address)
+					data1 = memory[PC++];
+					data2 = memory[PC++];
+					AC = (byte)(AC & memory[Y + twoBytesToShort(data1, data2)]);
+					
+					// update flags
+					Z = updateZFlag(AC);
+					N = updateNFlag(AC);					
+					break;	
+					
+				case (byte) 0x21:
+					// AND - Logical AND - (Indirect,X) (16-bit address)
+					data1 = memory[PC++];			
+					AC = (byte)(AC & memory[memory[X + data1]]);
+					
+					// update flags
+					Z = updateZFlag(AC);
+					N = updateNFlag(AC);					
+					break;			
+					
+				case (byte) 0x31:
+					// AND - Logical AND - (Indirect), Y (16-bit address)
+					data1 = memory[PC++];
+					AC = (byte)(AC & memory[memory[data1] + Y]);
+					
+					// update flags
+					Z = updateZFlag(AC);
+					N = updateNFlag(AC);					
+					break;
+
+				// -------------------- EOR - Exclusive OR --------------------						
+				case (byte) 0x49:
+					// EOR - Exclusive OR - Immediate
+					data1 =  memory[PC++];				
 					AC = (byte) (AC ^ data1);
 					
 					// update flags
 					Z = updateZFlag(AC);
 					N = updateNFlag(AC);				
-					break;
-				case (byte) 0x09:
-					// ORA - Inclusive Or - immediate
-					data1 =  memory[PC++];
+					break;					
 					
+				case (byte) 0x45:
+					// EOR - Exclusive OR - Zero Page
+					data1 = memory[PC++];
+					AC = (byte) (AC ^ memory[data1]);	
+					
+					// update flags
+					Z = updateZFlag(AC);
+					N = updateNFlag(AC);	
+					break;	
+					
+				case (byte) 0x55:
+					// EOR - Exclusive OR - Zero Page, X
+					data1 = memory[PC++];
+					AC = (byte) (AC ^ memory[data1 + X]);
+					
+					// update flags
+					Z = updateZFlag(AC);
+					N = updateNFlag(AC);	
+					break;				
+					
+				case (byte) 0x4D:
+					// EOR - Exclusive OR - Absolute (16-bit address)
+					data1 = memory[PC++];
+					data2 = memory[PC++];	
+					AC = (byte)(AC ^ memory[twoBytesToShort(data1, data2)]);
+					
+					// update flags
+					Z = updateZFlag(AC);
+					N = updateNFlag(AC);	
+					break;
+					
+				case (byte) 0x5D:
+					// EOR - Exclusive OR - Absolute,X (16-bit address)
+					data1 = memory[PC++];
+					data2 = memory[PC++];
+					AC = (byte)(AC ^ memory[X + twoBytesToShort(data1, data2)]);
+					
+					// update flags
+					Z = updateZFlag(AC);
+					N = updateNFlag(AC);					
+					break;
+					
+				case (byte) 0x59:
+					// EOR - Exclusive OR - Absolute,Y (16-bit address)
+					data1 = memory[PC++];
+					data2 = memory[PC++];
+					AC = (byte)(AC ^ memory[Y + twoBytesToShort(data1, data2)]);
+					
+					// update flags
+					Z = updateZFlag(AC);
+					N = updateNFlag(AC);					
+					break;	
+					
+				case (byte) 0x41:
+					// EOR - Exclusive OR - (Indirect,X) (16-bit address)
+					data1 = memory[PC++];			
+					AC = (byte)(AC ^ memory[memory[X + data1]]);
+					
+					// update flags
+					Z = updateZFlag(AC);
+					N = updateNFlag(AC);					
+					break;			
+					
+				case (byte) 0x51:
+					// EOR - Exclusive OR - (Indirect), Y (16-bit address)
+					data1 = memory[PC++];
+					AC = (byte)(AC ^ memory[memory[data1] + Y]);
+					
+					// update flags
+					Z = updateZFlag(AC);
+					N = updateNFlag(AC);					
+					break;					
+					
+				// -------------------- ORA - Inclusive OR --------------------						
+				case (byte) 0x09:
+					// ORA - Inclusive OR - Immediate
+					data1 =  memory[PC++];				
 					AC = (byte) (AC | data1);
 					
 					// update flags
 					Z = updateZFlag(AC);
 					N = updateNFlag(AC);				
-					break;														
+					break;					
+					
+				case (byte) 0x05:
+					// ORA - Inclusive OR - Zero Page
+					data1 = memory[PC++];
+					AC = (byte) (AC | memory[data1]);	
+					
+					// update flags
+					Z = updateZFlag(AC);
+					N = updateNFlag(AC);	
+					break;	
+					
+				case (byte) 0x15:
+					// ORA - Inclusive OR - Zero Page, X
+					data1 = memory[PC++];
+					AC = (byte) (AC | memory[data1 + X]);
+					
+					// update flags
+					Z = updateZFlag(AC);
+					N = updateNFlag(AC);	
+					break;				
+					
+				case (byte) 0x0D:
+					// ORA - Inclusive OR - Absolute (16-bit address)
+					data1 = memory[PC++];
+					data2 = memory[PC++];	
+					AC = (byte)(AC | memory[twoBytesToShort(data1, data2)]);
+					
+					// update flags
+					Z = updateZFlag(AC);
+					N = updateNFlag(AC);	
+					break;
+					
+				case (byte) 0x1D:
+					// ORA - Inclusive OR - Absolute,X (16-bit address)
+					data1 = memory[PC++];
+					data2 = memory[PC++];
+					AC = (byte)(AC | memory[X + twoBytesToShort(data1, data2)]);
+					
+					// update flags
+					Z = updateZFlag(AC);
+					N = updateNFlag(AC);					
+					break;
+					
+				case (byte) 0x19:
+					// ORA - Inclusive OR - Absolute,Y (16-bit address)
+					data1 = memory[PC++];
+					data2 = memory[PC++];
+					AC = (byte)(AC | memory[Y + twoBytesToShort(data1, data2)]);
+					
+					// update flags
+					Z = updateZFlag(AC);
+					N = updateNFlag(AC);					
+					break;	
+					
+				case (byte) 0x01:
+					// ORA - Inclusive OR - (Indirect,X) (16-bit address)
+					data1 = memory[PC++];			
+					AC = (byte)(AC | memory[memory[X + data1]]);
+					
+					// update flags
+					Z = updateZFlag(AC);
+					N = updateNFlag(AC);					
+					break;			
+					
+				case (byte) 0x11:
+					// ORA - Inclusive OR - (Indirect), Y (16-bit address)
+					data1 = memory[PC++];
+					AC = (byte)(AC | memory[memory[data1] + Y]);
+					
+					// update flags
+					Z = updateZFlag(AC);
+					N = updateNFlag(AC);					
+					break;	
+					
+				// -------------------- BIT - Bit Test --------------------								
+				case (byte) 0x24:
+					// BIT - Bit Test - Zero Page
+					// ORA - Inclusive OR - Zero Page
+					data1 = memory[PC++];
+					tmp = (byte) (AC & memory[data1]);	
+					
+					// update flags
+					Z = updateZFlag(tmp);
+					V = (((byte)tmp & 64) == 1)? true : false;	// bit 6
+					N = (((byte)tmp & 128) == 1)? true : false;	// bit 7	
+					break;
+				
+				case (byte) 0x2C:
+					// BIT - Bit Test - Absolute
+					data1 = memory[PC++];
+					data2 = memory[PC++];	
+					tmp = (byte)(AC & memory[twoBytesToShort(data1, data2)]);
+					
+					// update flags
+					Z = updateZFlag(tmp);
+					V = (((byte)tmp & 64) == 1)? true : false;	// bit 6
+					N = (((byte)tmp & 128) == 1)? true : false;	// bit 7								
+					break;
+					
+				// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+				// Arithmetic operations 
+				// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *					
 				case (byte) 0x69: 	
 					// ADC - Add with Carry - Immediate
 					data1 =  memory[PC++];
@@ -483,7 +766,7 @@ public class CSC350P2 {
 					
 					// update flags
 					Z = updateZFlag(AC);
-					N = updateNFlag(AC);
+					N = updateNFlag(AC);	
 					break;
 				default:
 					System.out.println("Error: Couldn't find instruction for opcode: " + opcode);
@@ -515,6 +798,20 @@ public class CSC350P2 {
 	// take 2 bytes and create a short
 	public static short twoBytesToShort(byte b1, byte b2) {
         return (short) ((b1 << 8) | b2);
+	}
+	
+	// takes all flags and returns a copy of the status flags as a byte
+	public static byte flagsToByte(boolean N, boolean V, boolean G, boolean B, boolean D, boolean I, boolean Z, boolean C) {
+		byte tmp = 0;
+		if (C) tmp |= 1;
+		if (Z) tmp |= 2;
+		if (I) tmp |= 4;
+		if (D) tmp |= 8;
+		if (B) tmp |= 16;
+		if (G) tmp |= 32;
+		if (V) tmp |= 64;
+		if (N) tmp |= 128;
+		return tmp;
 	}
 	
 /* * * * * * * * *
