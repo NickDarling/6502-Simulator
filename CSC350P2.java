@@ -2,8 +2,6 @@ import java.util.*;
 import java.io.*;
 
 public class CSC350P2 {
-
-	static final short STARTING_MEMORY_LOCATION = 0x0600;
 	static final short STARTING_STACK_LOCATION = 0x01FF;	
 	static final int TOTAL_MEMORY = 65536; 	// 4KB
 	static final short STACK_SIZE = 256;	// 256 bytes
@@ -11,7 +9,7 @@ public class CSC350P2 {
 	public static void main (String [] args) {
 		// initialize registers	
 		// 16-bit program counter
-		short PC = STARTING_MEMORY_LOCATION;	// program counter
+		short PC = 0;	// program counter
 		
 		// 8-bit registers
 		byte AC = 0;		// accumulator
@@ -42,55 +40,107 @@ public class CSC350P2 {
 		
 		byte [] memory = new byte [TOTAL_MEMORY];	// 4 KB of memory
 
-		int currLocation = STARTING_MEMORY_LOCATION;
-
+		String line;
+		String[] split = null;
+		
+		if (scanner.hasNextLine()) {
+			// 1. read line
+			line = scanner.nextLine();			
+	
+			// 2. split up line
+			split = (line.substring(1)).split("\\s+");	
+		} else {
+			System.out.println("Error: Can't read file");
+			scanner.close();	
+			System.exit(0);
+		}
+		
+		if (split[0].equals("data")) {
+			// put data in memory
+			while (scanner.hasNextLine()) {
+				// 1. read line
+				line = scanner.nextLine();			
+		
+				// 2. split up line
+				if (!line.trim().isEmpty()) {	// check for blank line
+					split = (line.substring(1)).split("\\s+");	
+	
+					if (split[0].equals("code"))
+						break;
+					
+					// else
+					// split[0] = location in memory
+					// split[1] = value
+					memory[strToShort(split[0])] = strToByte(split[1]);	
+				}
+			}
+		}
+		
+		boolean first = true;	// true when first instruction - used to get initial PC value
+		int lastAddr = 0;		// addr of last instruction
+		
+		// else assume no data and just code
 		// put program in memory
 		while (scanner.hasNextLine()) {
 			// 1. read line
-			String line = scanner.nextLine();
+			line = scanner.nextLine();
 			//System.out.println(line);
 			
 			// 2. split up line
 			// split[0] = address of instruction
 			// split[1] = instruction opcode
 			// (if instruction needs data) split [2] = data, split [3] = data
-			String[] split = (line.substring(1)).split("\\s+");		
-			
+			split = (line.substring(1)).split("\\s+");				
+
 			// 3. save instruction opcode
-			memory[currLocation++] = strToByte(split[1]);
+			int incr = 0;
+			memory[strToShort(split[0]) + incr++] = strToByte(split[1]);
+			
+			// used to get intial PC value
+			if (first) {
+				PC = strToShort(split[0]);
+				first = false;
+			}
 			
 			// 4. save data values (if there are any)
 			// check if end of line or if token is > 2 characters (then it's a comment)
 			int i = 2;
 			while (split.length > i) {
 				if (split[i].length() <= 2) {
-					memory[currLocation++] = strToByte(split[i++]);	// save data
+					memory[strToShort(split[0]) + incr++] = strToByte(split[i++]);	// save data
 				} else {
 					break;
 				}
 			}
 
+			lastAddr = strToShort(split[0]) + incr;
+			
 			// 5. check if exceeded memory limit
-			if (currLocation > TOTAL_MEMORY) {
+			if ((strToShort(split[0]) + incr) > TOTAL_MEMORY) {
 				System.out.println("Error: Can't fit program in memory");
 				System.exit(0);		
-			}		
+			}
 		}
 		scanner.close();	
+
 		
 		// prints memory
 		/*
-		for (int i = STARTING_MEMORY_LOCATION; i < currLocation; i++) {
-			System.out.printf("0x%02X: 0x%02X\n", i, memory[i]);
+		for (int i = 0; i < TOTAL_MEMORY; i++) {
+			if (memory[i] != 0)
+				System.out.printf("0x%02X: 0x%02X\n", i, memory[i]);
 		}
-		*/
+		System.out.printf("0x%02X\n", lastAddr);
+		System.out.printf("PC: 0x%02X\n", PC);
+		System.exit(0);
+		*/		
 		
 		// create interface
 		// UserInterface ui = new UserInterface();
 		// ui.createUI();
 		
 		// execute one instruction - end program once PC is finishes last line of code
-		while (PC < currLocation) {
+		while (PC < lastAddr) {
 			// 1. read opcode
 			byte opcode = memory[PC++];		// contains instruction type	
 			byte data1;		// first byte of data
@@ -443,17 +493,18 @@ public class CSC350P2 {
 					
 				// -------------------- PHA - Push Accumulator --------------------	
 				case (byte) 0x48:
-					memory[STARTING_STACK_LOCATION - SP++] = AC;				
+					memory[STARTING_STACK_LOCATION - (SP++ & 0xFF)] = AC;
+				
 					break;
 					
 				// -------------------- PHP - Push Processor Status --------------------	
 				case (byte) 0x08:
-					memory[STARTING_STACK_LOCATION - SP++] = flagsToByte(N, V, G, B, D, I, Z, C);			
+					memory[STARTING_STACK_LOCATION - (SP++ & 0xFF)] = flagsToByte(N, V, G, B, D, I, Z, C);			
 					break;
 			
 				// -------------------- PLA - Pull Accumulator --------------------	
 				case (byte) 0x68:
-					AC = memory[STARTING_STACK_LOCATION - SP--];	
+					AC = memory[STARTING_STACK_LOCATION - (SP-- & 0xFF)];	
 					// update flags
 					Z = updateZFlag(AC);
 					N = updateNFlag(AC);					
@@ -461,7 +512,7 @@ public class CSC350P2 {
 					
 				// -------------------- PLP - Pull Processor Status --------------------	
 				case (byte) 0x28:
-					tmp = memory[STARTING_STACK_LOCATION - SP--];
+					tmp = memory[STARTING_STACK_LOCATION - (SP-- & 0xFF)];
 					C = (((byte)tmp & 1) == 1)? true : false;
 					Z = (((byte)tmp & 2) == 1)? true : false;
 					I = (((byte)tmp & 4) == 1)? true : false;
@@ -754,13 +805,15 @@ public class CSC350P2 {
 					
 				// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
 				// Arithmetic operations 
-				// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *					
+				// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+					
+				// -------------------- ADC - Add With Carry --------------------		
 				case (byte) 0x69: 	
 					// ADC - Add with Carry - Immediate
 					data1 =  memory[PC++];
 					
-					V = updateVFlag(AC, opcode, data1);	// check overflow
-					C = updateCFlag(AC, opcode, data1);	// check carry
+					V = updateVFlag(AC, 1, data1);	// check overflow
+					C = updateCFlag(AC, 1, data1);	// check carry
 					
 					AC += data1;		
 					
@@ -768,6 +821,811 @@ public class CSC350P2 {
 					Z = updateZFlag(AC);
 					N = updateNFlag(AC);	
 					break;
+					
+				case (byte) 0x65:
+					// ADC - Add with Carry - Zero Page
+					data1 = memory[PC++];
+					
+					V = updateVFlag(AC, 1, memory[data1]);	// check overflow
+					C = updateCFlag(AC, 1, memory[data1]);	// check carry				
+				
+					AC += memory[data1];
+					
+					// update flags
+					Z = updateZFlag(AC);
+					N = updateNFlag(AC);	
+					break;	
+					
+				case (byte) 0x75:
+					// ADC - Add with Carry - Zero Page, X
+					data1 = memory[PC++];
+					
+					V = updateVFlag(AC, 1, memory[data1 + X]);	// check overflow
+					C = updateCFlag(AC, 1, memory[data1 + X]);	// check carry		
+				
+					AC += memory[data1 + X];
+					
+					// update flags
+					Z = updateZFlag(AC);
+					N = updateNFlag(AC);	
+					break;				
+					
+				case (byte) 0x6D:
+					// ADC - Add with Carry - Absolute (16-bit address)
+					data1 = memory[PC++];
+					data2 = memory[PC++];
+					
+					V = updateVFlag(AC, 1, memory[twoBytesToShort(data1, data2)]);	// check overflow
+					C = updateCFlag(AC, 1, memory[twoBytesToShort(data1, data2)]);	// check carry		
+					
+					AC += memory[twoBytesToShort(data1, data2)];
+					
+					// update flags
+					Z = updateZFlag(AC);
+					N = updateNFlag(AC);	
+					break;
+					
+				case (byte) 0x7D:
+					// ADC - Add with Carry - Absolute,X (16-bit address)
+					data1 = memory[PC++];
+					data2 = memory[PC++];
+					
+					V = updateVFlag(AC, 1, memory[X + twoBytesToShort(data1, data2)]);	// check overflow
+					C = updateCFlag(AC, 1, memory[X + twoBytesToShort(data1, data2)]);	// check carry							
+					
+					AC += memory[X + twoBytesToShort(data1, data2)];
+					
+					// update flags
+					Z = updateZFlag(AC);
+					N = updateNFlag(AC);					
+					break;
+					
+				case (byte) 0x79:
+					// ADC - Add with Carry - Absolute,Y (16-bit address)
+					data1 = memory[PC++];
+					data2 = memory[PC++];
+	
+					V = updateVFlag(AC, 1, memory[Y + twoBytesToShort(data1, data2)]);	// check overflow
+					C = updateCFlag(AC, 1, memory[Y + twoBytesToShort(data1, data2)]);	// check carry						
+					
+					AC += memory[Y + twoBytesToShort(data1, data2)];
+					
+					// update flags
+					Z = updateZFlag(AC);
+					N = updateNFlag(AC);					
+					break;	
+					
+				case (byte) 0x61:
+					// ADC - Add with Carry - (Indirect,X) (16-bit address)
+					data1 = memory[PC++];
+	
+					V = updateVFlag(AC, 1, memory[memory[X + data1]]);	// check overflow
+					C = updateCFlag(AC, 1, memory[memory[X + data1]]);	// check carry					
+				
+					AC += memory[memory[X + data1]];
+					
+					// update flags
+					Z = updateZFlag(AC);
+					N = updateNFlag(AC);					
+					break;			
+					
+				case (byte) 0x71:
+					// ADC - Add with Carry - (Indirect), Y (16-bit address)
+					data1 = memory[PC++];
+	
+					V = updateVFlag(AC, 1, memory[memory[data1] + Y]);	// check overflow
+					C = updateCFlag(AC, 1, memory[memory[data1] + Y]);	// check carry						
+				
+					AC += memory[memory[data1] + Y];
+					
+					// update flags
+					Z = updateZFlag(AC);
+					N = updateNFlag(AC);					
+					break;						
+	
+				// -------------------- SBC - Subtract with Carry --------------------		
+				case (byte) 0xE9: 	
+					// SBC - Subtract with Carry - Immediate
+					data1 =  memory[PC++];
+					
+					V = updateVFlag(AC, 2, data1);	// check overflow
+					C = updateCFlag(AC, 2, data1);	// check carry
+					
+					AC -= data1;		
+					
+					// update flags
+					Z = updateZFlag(AC);
+					N = updateNFlag(AC);	
+					break;
+					
+				case (byte) 0xE5:
+					// SBC - Subtract with Carry - Zero Page
+					data1 = memory[PC++];
+					
+					V = updateVFlag(AC, 2, memory[data1]);	// check overflow
+					C = updateCFlag(AC, 2, memory[data1]);	// check carry				
+				
+					AC -= memory[data1];
+					
+					// update flags
+					Z = updateZFlag(AC);
+					N = updateNFlag(AC);	
+					break;	
+					
+				case (byte) 0xF5:
+					// SBC - Subtract with Carry - Zero Page, X
+					data1 = memory[PC++];
+					
+					V = updateVFlag(AC, 2, memory[data1 + X]);	// check overflow
+					C = updateCFlag(AC, 2, memory[data1 + X]);	// check carry		
+				
+					AC -= memory[data1 + X];
+					
+					// update flags
+					Z = updateZFlag(AC);
+					N = updateNFlag(AC);	
+					break;				
+					
+				case (byte) 0xED:
+					// SBC - Subtract with Carry - Absolute (16-bit address)
+					data1 = memory[PC++];
+					data2 = memory[PC++];
+					
+					V = updateVFlag(AC, 2, memory[twoBytesToShort(data1, data2)]);	// check overflow
+					C = updateCFlag(AC, 2, memory[twoBytesToShort(data1, data2)]);	// check carry		
+				
+					AC -= memory[twoBytesToShort(data1, data2)];
+					
+					// update flags
+					Z = updateZFlag(AC);
+					N = updateNFlag(AC);	
+					break;
+					
+				case (byte) 0xFD:
+					// SBC - Subtract with Carry - Absolute,X (16-bit address)
+					data1 = memory[PC++];
+					data2 = memory[PC++];
+					
+					V = updateVFlag(AC, 2, memory[X + twoBytesToShort(data1, data2)]);	// check overflow
+					C = updateCFlag(AC, 2, memory[X + twoBytesToShort(data1, data2)]);	// check carry							
+					
+					AC -= memory[X + twoBytesToShort(data1, data2)];
+					
+					// update flags
+					Z = updateZFlag(AC);
+					N = updateNFlag(AC);					
+					break;
+					
+				case (byte) 0xF9:
+					// SBC - Subtract with Carry - Absolute,Y (16-bit address)
+					data1 = memory[PC++];
+					data2 = memory[PC++];
+	
+					V = updateVFlag(AC, 2, memory[Y + twoBytesToShort(data1, data2)]);	// check overflow
+					C = updateCFlag(AC, 2, memory[Y + twoBytesToShort(data1, data2)]);	// check carry						
+					
+					AC -= memory[Y + twoBytesToShort(data1, data2)];
+					
+					// update flags
+					Z = updateZFlag(AC);
+					N = updateNFlag(AC);					
+					break;	
+					
+				case (byte) 0xE1:
+					// SBC - Subtract with Carry - (Indirect,X) (16-bit address)
+					data1 = memory[PC++];
+	
+					V = updateVFlag(AC, 2, memory[memory[X + data1]]);	// check overflow
+					C = updateCFlag(AC, 2, memory[memory[X + data1]]);	// check carry					
+				
+					AC -= memory[memory[X + data1]];
+					
+					// update flags
+					Z = updateZFlag(AC);
+					N = updateNFlag(AC);					
+					break;			
+					
+				case (byte) 0xF1:
+					// SBC - Subtract with Carry - (Indirect), Y (16-bit address)
+					data1 = memory[PC++];
+	
+					V = updateVFlag(AC, 2, memory[memory[data1] + Y]);	// check overflow
+					C = updateCFlag(AC, 2, memory[memory[data1] + Y]);	// check carry						
+				
+					AC -= memory[memory[data1] + Y];
+					
+					// update flags
+					Z = updateZFlag(AC);
+					N = updateNFlag(AC);					
+					break;						
+			
+				// -------------------- CMP - Compare --------------------		
+				case (byte) 0xC9: 	
+					// CMP - Compare - Immediate
+					data1 = memory[PC++];
+					
+					// update flags
+					C = AC >= data1 ? true : false;
+					Z = AC == data1 ? true : false;							
+					N = updateNFlag((byte)(AC - data1));	
+					break;
+					
+				case (byte) 0xC5:
+					// CMP - Compare - Zero Page
+					data1 = memory[PC++];
+
+					// update flags
+					C = AC >= memory[data1] ? true : false;
+					Z = AC == memory[data1] ? true : false;										
+					N = updateNFlag((byte)(AC - memory[data1]));		
+					break;	
+					
+				case (byte) 0xD5:
+					// CMP - Compare - Zero Page, X
+					data1 = memory[PC++];
+
+					// update flags
+					C = AC >= memory[data1 + X] ? true : false;
+					Z = AC == memory[data1 + X] ? true : false;										
+					N = updateNFlag((byte)(AC - memory[data1 + X]));	
+					break;				
+					
+				case (byte) 0xCD:
+					// CMP - Compare - Absolute (16-bit address)
+					data1 = memory[PC++];
+					data2 = memory[PC++];
+					
+					// update flags
+					C = AC >= memory[twoBytesToShort(data1, data2)] ? true : false;
+					Z = AC == memory[twoBytesToShort(data1, data2)] ? true : false;										
+					N = updateNFlag((byte)(AC - memory[twoBytesToShort(data1, data2)]));	
+					break;	
+					
+				case (byte) 0xDD:
+					// CMP - Compare - Absolute,X (16-bit address)
+					data1 = memory[PC++];
+					data2 = memory[PC++];
+					
+					// update flags
+					C = AC >= memory[X + twoBytesToShort(data1, data2)] ? true : false;
+					Z = AC == memory[X + twoBytesToShort(data1, data2)] ? true : false;										
+					N = updateNFlag((byte)(AC - memory[X + twoBytesToShort(data1, data2)]));
+					break;
+					
+				case (byte) 0xD9:
+					// CMP - Compare - Absolute,Y (16-bit address)
+					data1 = memory[PC++];
+					data2 = memory[PC++];
+	
+					// update flags
+					C = AC >= memory[Y + twoBytesToShort(data1, data2)] ? true : false;
+					Z = AC == memory[Y + twoBytesToShort(data1, data2)] ? true : false;										
+					N = updateNFlag((byte)(AC - memory[Y + twoBytesToShort(data1, data2)]));
+					break;
+					
+				case (byte) 0xC1:
+					// CMP - Compare - (Indirect,X) (16-bit address)
+					data1 = memory[PC++];
+
+					// update flags
+					C = AC >= memory[memory[X + data1]] ? true : false;
+					Z = AC == memory[memory[X + data1]] ? true : false;										
+					N = updateNFlag((byte)(AC - memory[memory[X + data1]]));	
+					break;
+					
+				case (byte) 0xD1:
+					// CMP - Compare - (Indirect), Y (16-bit address)
+					data1 = memory[PC++];
+
+					// update flags
+					C = AC >= memory[memory[data1] + Y] ? true : false;
+					Z = AC == memory[memory[data1] + Y] ? true : false;										
+					N = updateNFlag((byte)(AC - memory[memory[data1] + Y]));	
+					break;	
+					
+				// -------------------- CPX - Compare X Register --------------------		
+				case (byte) 0xE0: 	
+					// CPX - Compare X Register - Immediate
+					data1 = memory[PC++];
+					
+					// update flags
+					C = X >= data1 ? true : false;
+					Z = X == data1 ? true : false;										
+					N = updateNFlag((byte)(X - data1));	
+					break;
+					
+				case (byte) 0xE4:
+					// CPX - Compare X Register - Zero Page
+					data1 = memory[PC++];
+
+					// update flags
+					C = X >= memory[data1] ? true : false;
+					Z = X == memory[data1] ? true : false;											
+					N = updateNFlag((byte)(X - memory[data1]));		
+					break;	
+					
+				case (byte) 0xEC:
+					// CPX - Compare X Register - Absolute (16-bit address)
+					data1 = memory[PC++];
+					data2 = memory[PC++];
+					
+					// update flags
+					C = X >= memory[twoBytesToShort(data1, data2)] ? true : false;
+					Z = X == memory[twoBytesToShort(data1, data2)] ? true : false;										
+					N = updateNFlag((byte)(X - memory[twoBytesToShort(data1, data2)]));	
+					break;		
+					
+				// -------------------- CPY - Compare Y Register --------------------		
+				case (byte) 0xC0: 	
+					// CPY - Compare Y Register - Immediate
+					data1 = memory[PC++];
+					
+					// update flags
+					C = Y >= data1 ? true : false;
+					Z = Y == data1 ? true : false;									
+					N = updateNFlag((byte)(Y - data1));	
+					break;
+					
+				case (byte) 0xC4:
+					// CPY - Compare Y Register - Zero Page
+					data1 = memory[PC++];
+
+					// update flags
+					C = Y >= memory[data1] ? true : false;
+					Z = Y == memory[data1] ? true : false;							
+					N = updateNFlag((byte)(Y - memory[data1]));		
+					break;	
+					
+				case (byte) 0xCC:
+					// CPY - Compare Y Register - Absolute (16-bit address)
+					data1 = memory[PC++];
+					data2 = memory[PC++];
+					
+					// update flags
+					C = Y >= memory[twoBytesToShort(data1, data2)] ? true : false;
+					Z = Y == memory[twoBytesToShort(data1, data2)] ? true : false;								
+					N = updateNFlag((byte)(Y - memory[twoBytesToShort(data1, data2)]));	
+					break;	
+					
+				// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+				// Increments & Decrements 
+				// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+					
+				// -------------------- INC - Increment Memory --------------------		
+				case (byte) 0xE6:
+					// INC - Increment Memory - Zero Page
+					data1 = memory[PC++];
+					
+					memory[data1]++;
+
+					// update flags
+					Z = updateZFlag(memory[data1]);
+					N = updateNFlag(memory[data1]);	
+					break;	
+					
+				case (byte) 0xF6:
+					// INC - Increment Memory - Zero Page, X
+					data1 = memory[PC++];
+					memory[data1 + X]++;
+
+					// update flags
+					Z = updateZFlag(memory[data1 + X]);
+					N = updateNFlag(memory[data1 + X]);	
+					break;				
+					
+				case (byte) 0xEE:
+					// INC - Increment Memory - Absolute (16-bit address)
+					data1 = memory[PC++];
+					data2 = memory[PC++];
+					memory[twoBytesToShort(data1, data2)]++;	
+
+					// update flags
+					Z = updateZFlag(memory[twoBytesToShort(data1, data2)]);
+					N = updateNFlag(memory[twoBytesToShort(data1, data2)]);	
+					break;
+					
+				case (byte) 0xFE:
+					// INC - Increment Memory - Absolute,X (16-bit address)
+					data1 = memory[PC++];
+					data2 = memory[PC++];
+					memory[X + twoBytesToShort(data1, data2)]++;
+					
+					// update flags
+					Z = updateZFlag(memory[X + twoBytesToShort(data1, data2)]);
+					N = updateNFlag(memory[X + twoBytesToShort(data1, data2)]);					
+					break;
+					
+				// -------------------- INX - Increment X Register --------------------	
+				case (byte) 0xE8:
+					X++;
+					// update flags
+					Z = updateZFlag(X);
+					N = updateNFlag(X);	
+					break;
+	
+				// -------------------- INY - Increment Y Register --------------------				
+				case (byte) 0xC8:
+					Y++;
+					// update flags
+					Z = updateZFlag(Y);
+					N = updateNFlag(Y);	
+					break;					
+					
+				// -------------------- DEC - Decrement Memory --------------------		
+				case (byte) 0xC6:
+					// DEC - Decrement Memory - Zero Page
+					data1 = memory[PC++];
+					
+					memory[data1]--;
+
+					// update flags
+					Z = updateZFlag(memory[data1]);
+					N = updateNFlag(memory[data1]);	
+					break;	
+					
+				case (byte) 0xD6:
+					// DEC - Decrement Memory - Zero Page, X
+					data1 = memory[PC++];
+					memory[data1 + X]--;
+
+					// update flags
+					Z = updateZFlag(memory[data1 + X]);
+					N = updateNFlag(memory[data1 + X]);	
+					break;				
+					
+				case (byte) 0xCE:
+					// DEC - Decrement Memory - Absolute (16-bit address)
+					data1 = memory[PC++];
+					data2 = memory[PC++];
+					memory[twoBytesToShort(data1, data2)]--;	
+
+					// update flags
+					Z = updateZFlag(memory[twoBytesToShort(data1, data2)]);
+					N = updateNFlag(memory[twoBytesToShort(data1, data2)]);	
+					break;
+					
+				case (byte) 0xDE:
+					// DEC - Decrement Memory - Absolute,X (16-bit address)
+					data1 = memory[PC++];
+					data2 = memory[PC++];
+					memory[X + twoBytesToShort(data1, data2)]--;
+					
+					// update flags
+					Z = updateZFlag(memory[X + twoBytesToShort(data1, data2)]);
+					N = updateNFlag(memory[X + twoBytesToShort(data1, data2)]);					
+					break;	
+				
+				// -------------------- DEX - Decrement X Register --------------------	
+				case (byte) 0xCA:
+					X--;
+					// update flags
+					Z = updateZFlag(X);
+					N = updateNFlag(X);	
+					break;
+	
+				// -------------------- DEY - Decrement Y Register --------------------				
+				case (byte) 0x88:
+					Y--;
+					// update flags
+					Z = updateZFlag(Y);
+					N = updateNFlag(Y);	
+					break;					
+				
+				// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+				// Shifts 
+				// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *					
+					
+				// -------------------- ASL - Arithmetic Shift Left --------------------		
+				case (byte) 0x0A:
+					// ASL - Arithmetic Shift Left - Accumulator
+					C = (((byte)AC & 128) == 1)? true : false;	// check for carry
+					AC = (byte)(AC << 2);
+
+					// update flags			
+					Z = updateZFlag(AC);
+					N = updateNFlag(AC);	
+					break;	
+				
+				case (byte) 0x06:
+					// ASL - Arithmetic Shift Left - Zero Page
+					data1 = memory[PC++];
+					C = (((byte) memory[data1] & 128) == 1)? true : false;	// check for carry
+				
+					memory[data1] = (byte)(memory[data1] << 2);
+
+					// update flags
+					Z = updateZFlag(memory[data1]);
+					N = updateNFlag(memory[data1]);	
+					break;	
+					
+				case (byte) 0x16:
+					// ASL - Arithmetic Shift Left - Zero Page, X
+					data1 = memory[PC++];
+					C = (((byte) memory[data1 + X] & 128) == 1)? true : false;	// check for carry
+					
+					memory[data1 + X] = (byte)(memory[data1 + X] << 2);
+
+					// update flags
+					Z = updateZFlag(memory[data1 + X]);
+					N = updateNFlag(memory[data1 + X]);	
+					break;				
+					
+				case (byte) 0x0E:
+					// ASL - Arithmetic Shift Left - Absolute (16-bit address)
+					data1 = memory[PC++];
+					data2 = memory[PC++];
+					C = (((byte) memory[twoBytesToShort(data1, data2)] & 128) == 1)? true : false;	// check for carry
+					
+					memory[twoBytesToShort(data1, data2)] = (byte)(memory[twoBytesToShort(data1, data2)] << 2);	
+
+					// update flags
+					Z = updateZFlag(memory[twoBytesToShort(data1, data2)]);
+					N = updateNFlag(memory[twoBytesToShort(data1, data2)]);	
+					break;
+					
+				case (byte) 0x1E:
+					// ASL - Arithmetic Shift Left - Absolute,X (16-bit address)
+					data1 = memory[PC++];
+					data2 = memory[PC++];
+					C = (((byte) memory[X + twoBytesToShort(data1, data2)] & 128) == 1)? true : false;	// check for carry
+					
+					memory[X + twoBytesToShort(data1, data2)] = (byte)(memory[X + twoBytesToShort(data1, data2)] << 2);
+					
+					// update flags
+					Z = updateZFlag(memory[X + twoBytesToShort(data1, data2)]);
+					N = updateNFlag(memory[X + twoBytesToShort(data1, data2)]);					
+					break;						
+	
+				// -------------------- LSR - Logical Shift Right --------------------		
+				case (byte) 0x4A:
+					// LSR - Logical Shift Right - Accumulator
+					data2 = (byte)(AC & 1);		// bit 0
+					C = (data2 == 1)? true : false;	// carry is now bit 0
+					
+					AC = (byte)((AC >> 2) + (128 * data2));
+
+					// update flags			
+					Z = updateZFlag(AC);
+					N = updateNFlag(AC);	
+					break;	
+				
+				case (byte) 0x46:
+					// LSR - Logical Shift Right - Zero Page
+					data1 = memory[PC++];
+					data2 = (byte)(memory[data1] & 1);		// bit 0
+					C = (data2 == 1)? true : false;	// check for carry
+				
+					memory[data1] = (byte)((memory[data1] >> 2) + (128 * data2));
+
+					// update flags
+					Z = updateZFlag(memory[data1]);
+					N = updateNFlag(memory[data1]);	
+					break;	
+					
+				case (byte) 0x56:
+					// LSR - Logical Shift Right - Zero Page, X
+					data1 = memory[PC++];
+					data2 = (byte)(memory[data1 + X] & 1);		// bit 0
+					C = (data2 == 1)? true : false;	// check for carry
+				
+					memory[data1] = (byte)((memory[data1] >> 2) + (128 * data2));
+
+					// update flags
+					Z = updateZFlag(memory[data1 + X]);
+					N = updateNFlag(memory[data1 + X]);	
+					break;				
+					
+				case (byte) 0x4E:
+					// LSR - Logical Shift Right - Absolute (16-bit address)
+					data1 = memory[PC++];
+					data2 = memory[PC++];
+					tmp = (byte)(memory[twoBytesToShort(data1, data2)] & 1); 	// bit 0
+					C = (tmp == 1)? true : false;	// check for carry
+					
+					memory[twoBytesToShort(data1, data2)] = (byte)((memory[twoBytesToShort(data1, data2)] >> 2) + (128 * tmp));
+
+					// update flags
+					Z = updateZFlag(memory[twoBytesToShort(data1, data2)]);
+					N = updateNFlag(memory[twoBytesToShort(data1, data2)]);	
+					break;
+					
+				case (byte) 0x5E:
+					// LSR - Logical Shift Right - Absolute,X (16-bit address)
+					data1 = memory[PC++];
+					data2 = memory[PC++];
+					tmp = (byte)(memory[X + twoBytesToShort(data1, data2)] & 1); 	// bit 0
+					C = (tmp == 1)? true : false;	// check for carry
+					
+					memory[X + twoBytesToShort(data1, data2)] = (byte)((memory[X + twoBytesToShort(data1, data2)] >> 2) + (128 * tmp));
+					
+					// update flags
+					Z = updateZFlag(memory[X + twoBytesToShort(data1, data2)]);
+					N = updateNFlag(memory[X + twoBytesToShort(data1, data2)]);					
+					break;						
+				
+				// -------------------- ROL - Rotate Left --------------------		
+				case (byte) 0x2A:
+					// ROL - Rotate Left - Accumulator
+					data2 = (byte)(AC & 128);	// old bit 7
+				
+					AC = (byte)(AC << 1);
+					if (C) AC++;	// bit 0 is filled with current value of the carry flag
+						
+					// update flags	
+					C = (data2 == 128)? true : false; // check for carry
+					Z = updateZFlag(AC);
+					N = updateNFlag(AC);	
+					break;	
+				
+				case (byte) 0x26:
+					// ROL - Rotate Left - Zero Page
+					data1 = memory[PC++];
+					data2 = (byte) (AC & 128);	// old bit 7
+					
+					memory[data1] = (byte)(memory[data1] << 1);
+					if (C) memory[data1]++;		// bit 0 is filled with current value of the carry flag
+
+					// update flags
+					C = (data2 == 128)? true : false; // check for carry
+					Z = updateZFlag(memory[data1]);
+					N = updateNFlag(memory[data1]);	
+					break;	
+					
+				case (byte) 0x36:
+					// ROL - Rotate Left - Zero Page, X
+					data1 = memory[PC++];
+					data2 = (byte)(memory[data1 + X] & 128);	// old bit 7
+					
+					memory[data1 + X] = (byte)(memory[data1 + X] << 1);
+					if (C) memory[data1 + X]++;		// bit 0 is filled with current value of the carry flag
+					
+					// update flags
+					C = (data2 == 128)? true : false; // check for carry
+					Z = updateZFlag(memory[data1 + X]);
+					N = updateNFlag(memory[data1 + X]);	
+					break;				
+					
+				case (byte) 0x2E:
+					// ROL - Rotate Left - Absolute (16-bit address)
+					data1 = memory[PC++];
+					data2 = memory[PC++];
+					tmp = (byte)(memory[twoBytesToShort(data1, data2)] & 128);	// old bit 7
+
+					memory[twoBytesToShort(data1, data2)] = (byte)(memory[twoBytesToShort(data1, data2)] << 1);
+					if (C) memory[twoBytesToShort(data1, data2)]++;		// bit 0 is filled with current value of the carry flag
+
+					// update flags
+					C = (tmp == 128)? true : false; // check for carry
+					Z = updateZFlag(memory[twoBytesToShort(data1, data2)]);
+					N = updateNFlag(memory[twoBytesToShort(data1, data2)]);	
+					break;
+					
+				case (byte) 0x3E:
+					// ROL - Rotate Left - Absolute,X (16-bit address)
+					data1 = memory[PC++];
+					data2 = memory[PC++];
+					tmp = (byte)(memory[X + twoBytesToShort(data1, data2)] & 128);	// old bit 7 
+					
+					memory[X + twoBytesToShort(data1, data2)] = (byte)(memory[X + twoBytesToShort(data1, data2)] << 1);
+					if (C) memory[X + twoBytesToShort(data1, data2)]++;		// bit 0 is filled with current value of the carry flag
+					
+					// update flags
+					C = (tmp == 128)? true : false; // check for carry
+					Z = updateZFlag(memory[X + twoBytesToShort(data1, data2)]);
+					N = updateNFlag(memory[X + twoBytesToShort(data1, data2)]);					
+					break;					
+	
+				// -------------------- ROR - Rotate Right --------------------		
+				case (byte) 0x6A:
+					// ROR - Rotate Right - Accumulator
+					data2 = (byte)(AC & 1);	// old bit 0
+				
+					AC = (byte)(AC >> 1);
+					if (C) AC += 128;	// bit 7 is filled with current value of the carry flag
+					
+					// update flags	
+					C = (data2 == 1)? true : false;	// check for carry
+					Z = updateZFlag(AC);
+					N = updateNFlag(AC);	
+					break;	
+				
+				case (byte) 0x66:
+					// ROR - Rotate Right - Zero Page
+					data1 = memory[PC++];
+					data2 = (byte)(AC & 1);	// old bit 0
+					
+					memory[data1] = (byte)(memory[data1] >> 1);
+					if (C) memory[data1] += 128;		// bit 7 is filled with current value of the carry flag
+					
+					// update flags
+					C = (data2 == 1)? true : false; // check for carry
+					Z = updateZFlag(memory[data1]);
+					N = updateNFlag(memory[data1]);	
+					break;	
+					
+				case (byte) 0x76:
+					// ROR - Rotate Right - Zero Page, X
+					data1 = memory[PC++];
+					data2 = (byte)(memory[data1 + X] & 1);	// old bit 0
+					
+					memory[data1 + X] = (byte)(memory[data1 + X] >> 1);
+					if (C) memory[data1 + X] += 128;		// bit 7 is filled with current value of the carry flag
+					
+					// update flags
+					C = (data2 == 1)? true : false; // check for carry
+					Z = updateZFlag(memory[data1 + X]);
+					N = updateNFlag(memory[data1 + X]);	
+					break;				
+					
+				case (byte) 0x6E:
+					// ROR - Rotate Right - Absolute (16-bit address)
+					data1 = memory[PC++];
+					data2 = memory[PC++];
+					tmp = (byte)(memory[twoBytesToShort(data1, data2)] & 1);	// old bit 0
+
+					memory[twoBytesToShort(data1, data2)] = (byte)(memory[twoBytesToShort(data1, data2)] >> 1);
+					if (C) memory[twoBytesToShort(data1, data2)] += 128;		// bit 7 is filled with current value of the carry flag
+
+					// update flags
+					C = (tmp == 1)? true : false; // check for carry
+					Z = updateZFlag(memory[twoBytesToShort(data1, data2)]);
+					N = updateNFlag(memory[twoBytesToShort(data1, data2)]);	
+					break;
+					
+				case (byte) 0x7E:
+					// ROR - Rotate Right - Absolute,X (16-bit address)
+					data1 = memory[PC++];
+					data2 = memory[PC++];
+					tmp = (byte)(memory[X + twoBytesToShort(data1, data2)] & 1);	// old bit 0 
+					
+					memory[X + twoBytesToShort(data1, data2)] = (byte)(memory[X + twoBytesToShort(data1, data2)] >> 1);
+					if (C) memory[X + twoBytesToShort(data1, data2)] += 128;		// bit 7 is filled with current value of the carry flag
+					
+					// update flags
+					C = (tmp == 1)? true : false; // check for carry
+					Z = updateZFlag(memory[X + twoBytesToShort(data1, data2)]);
+					N = updateNFlag(memory[X + twoBytesToShort(data1, data2)]);					
+					break;					
+			
+				// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+				// Jumps & Calls 
+				// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *					
+				
+				// -------------------- JMP - Jump --------------------	
+				case (byte) 0x4C:
+					// JMP - Jump - Absolute (16-bit address)
+					data1 = memory[PC++];
+					data2 = memory[PC++];
+					PC = memory[twoBytesToShort(data1, data2)];
+					break;
+				case (byte) 0x6C:
+					// JMP - Jump - (Indirect) (16-bit address)
+					data1 = memory[PC++]; 
+					data2 = memory[PC++]; 
+					PC = twoBytesToShort(memory[memory[twoBytesToShort(data1, data2)]], memory[memory[twoBytesToShort(data1, data2)] + 1]);				
+					break;		
+			
+				// -------------------- JSR - Jump to Subroutine --------------------	
+				case (byte) 0x20:
+					// JMP - Jump - Absolute (16-bit address)
+					data1 = memory[PC++];
+					data2 = memory[PC++];
+					
+					PC--;
+					memory[STARTING_STACK_LOCATION - (SP++ & 0xFF)] = (byte)(PC % 256);	// least significant byte
+					memory[STARTING_STACK_LOCATION - (SP++ & 0xFF)] = (byte)(PC / 256);	// most significant byte
+					
+					PC = twoBytesToShort(data1, data2);
+					
+					break;
+				
+				// -------------------- RTS - Return from Subroutine --------------------	
+				case (byte) 0x60:
+					data1 = memory[STARTING_STACK_LOCATION - (SP++ & 0xFF)];
+					data2 = memory[STARTING_STACK_LOCATION - (SP++ & 0xFF)];
+					PC = twoBytesToShort(data2, data1);
+					break;
+					
 				default:
 					System.out.println("Error: Couldn't find instruction for opcode: " + opcode);
 					break;
@@ -789,6 +1647,11 @@ public class CSC350P2 {
 	public static byte strToByte(String str) {
 		return (byte)Integer.parseInt(str, 16);
 	}
+	
+	// take string in base 16 and return short
+	public static short strToShort(String str) {
+		return (short)Integer.parseInt(str, 16);
+	}	
 	
 	// take string in base 16 and return int
 	public static int strToInt(String str) {
@@ -834,7 +1697,7 @@ public class CSC350P2 {
 	// return true if overflow in bit 7
 	// this will occur if the addition of two numbers causes a carry of the most significant bit
 	// or subtraction of two numbers requires a borrow into the most significant bit
-	public static boolean updateCFlag (byte AC, byte opcode, byte input) {
+	public static boolean updateCFlag (byte AC, int opcode, short input) {
 // ** to do				
 		return false;	
 	}	
@@ -842,14 +1705,21 @@ public class CSC350P2 {
 	// return true if overflow (i.e. sign bit is incorrect)
 	// this will occur if adding 2 positive numbers that sum to > 127
 	// or adding 2 negative numbers that sum to < -128
-	public static boolean updateVFlag (byte AC, byte opcode, byte input) {
-		if (opcode == 0x69) {
+	public static boolean updateVFlag (byte AC, int opcode, short input) {
+		// opcode 1 = Add with Carry
+		if (opcode == 1) {
 			byte tmp = (byte) (AC + input);
 			if (AC > 0 && input > 0 && tmp < 0)
 				return true;
 			if (AC < 0 && input < 0 && tmp > 0)
 				return true;
 			return false;
+			
+		// opcode 2 = Subtract with carry
+		} else if (opcode == 2) {
+
+// ** to do
+			
 		} else {
 			System.out.println("Error: Couldn't find opcode: " + opcode + " in updateVFlag");
 		}		
