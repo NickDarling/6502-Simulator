@@ -32,7 +32,7 @@ public class CSC350P2 {
 		// open assembly code
 		Scanner scanner = null;
 		try {
-			scanner = new Scanner (new File ("program2.asm"));
+			scanner = new Scanner (new File ("program3.asm"));
 		} catch (Exception e) {
 			System.out.println("Error: Couldn't open file");
 			System.exit(0);
@@ -43,39 +43,12 @@ public class CSC350P2 {
 		String line;
 		String[] split = null;
 		
-		if (scanner.hasNextLine()) {
-			// 1. read line
-			line = scanner.nextLine();			
-	
-			// 2. split up line
-			split = (line.substring(1)).split("\\s+");	
-		} else {
+		if (!scanner.hasNextLine()) {
 			System.out.println("Error: Can't read file");
 			scanner.close();	
 			System.exit(0);
 		}
-		
-		if (split[0].equals("data")) {
-			// put data in memory
-			while (scanner.hasNextLine()) {
-				// 1. read line
-				line = scanner.nextLine();			
-		
-				// 2. split up line
-				if (!line.trim().isEmpty()) {	// check for blank line
-					split = (line.substring(1)).split("\\s+");	
-	
-					if (split[0].equals("code"))
-						break;
-					
-					// else
-					// split[0] = location in memory
-					// split[1] = value
-					memory[strToShort(split[0])] = strToByte(split[1]);	
-				}
-			}
-		}
-		
+				
 		boolean first = true;	// true when first instruction - used to get initial PC value
 		int lastAddr = 0;		// addr of last instruction
 		
@@ -91,34 +64,56 @@ public class CSC350P2 {
 			// split[1] = instruction opcode
 			// (if instruction needs data) split [2] = data, split [3] = data
 			split = (line.substring(1)).split("\\s+");				
-
-			// 3. save instruction opcode
-			int incr = 0;
-			memory[strToShort(split[0]) + incr++] = strToByte(split[1]);
 			
-			// used to get intial PC value
-			if (first) {
-				PC = strToShort(split[0]);
-				first = false;
-			}
+			// variable
+			if (split[0].equals("data")) {
+				// put data in memory
+				while (scanner.hasNextLine()) {
+					// 1. read line
+					line = scanner.nextLine();			
 			
-			// 4. save data values (if there are any)
-			// check if end of line or if token is > 2 characters (then it's a comment)
-			int i = 2;
-			while (split.length > i) {
-				if (split[i].length() <= 2) {
-					memory[strToShort(split[0]) + incr++] = strToByte(split[i++]);	// save data
-				} else {
-					break;
+					// 2. split up line
+					if (!line.trim().isEmpty()) {	// check for blank line
+						split = (line.substring(1)).split("\\s+");	
+		
+						if (split[0].equals("code"))
+							break;
+						
+						// else
+						// split[0] = location in memory
+						// split[1] = value
+						memory[strToShort(split[0])] = strToByte(split[1]);	
+					}
 				}
-			}
-
-			lastAddr = strToShort(split[0]) + incr;
-			
-			// 5. check if exceeded memory limit
-			if ((strToShort(split[0]) + incr) > TOTAL_MEMORY) {
-				System.out.println("Error: Can't fit program in memory");
-				System.exit(0);		
+			} else {
+				// 3. save instruction opcode
+				int incr = 0;
+				memory[strToShort(split[0]) + incr++] = strToByte(split[1]);
+				
+				// used to get intial PC value
+				if (first) {
+					PC = strToShort(split[0]);
+					first = false;
+				}
+				
+				// 4. save data values (if there are any)
+				// check if end of line or if token is > 2 characters (then it's a comment)
+				int i = 2;
+				while (split.length > i) {
+					if (split[i].length() <= 2) {
+						memory[strToShort(split[0]) + incr++] = strToByte(split[i++]);	// save data
+					} else {
+						break;
+					}
+				}
+	
+				lastAddr = strToShort(split[0]) + incr;
+				
+				// 5. check if exceeded memory limit
+				if ((strToShort(split[0]) + incr) > TOTAL_MEMORY) {
+					System.out.println("Error: Can't fit program in memory");
+					System.exit(0);		
+				}
 			}
 		}
 		scanner.close();	
@@ -133,7 +128,7 @@ public class CSC350P2 {
 		System.out.printf("0x%02X\n", lastAddr);
 		System.out.printf("PC: 0x%02X\n", PC);
 		System.exit(0);
-		*/		
+		*/
 		
 		// create interface
 		// UserInterface ui = new UserInterface();
@@ -146,7 +141,7 @@ public class CSC350P2 {
 			byte data1;		// first byte of data
 			byte data2;		// second byte of data
 			byte tmp;
-			
+
 			// 2. find instruction
 			switch (opcode) {
 			
@@ -1626,13 +1621,119 @@ public class CSC350P2 {
 					PC = twoBytesToShort(data2, data1);
 					break;
 					
+				// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+				// Branches
+				// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *					
+				
+				// -------------------- BCC - Branch if carry flag clear --------------------
+				case (byte) 0x90:
+					data1 = memory[PC++];
+					if (!C) PC += data1;
+					break;
+
+				// -------------------- BCS - Branch if carry flag set --------------------
+				case (byte) 0xB0:
+					data1 = memory[PC++];
+					if (C) PC += data1;
+					break;					
+
+				// -------------------- BEQ - Branch if equal --------------------
+				case (byte) 0xF0:
+					data1 = memory[PC++];
+					if (Z) PC += data1;
+					break;	
+					
+				// -------------------- BMI - Branch if minus --------------------
+				case (byte) 0x30:
+					data1 = memory[PC++];
+					if (N) PC += data1;
+					break;
+					
+				// -------------------- BNE - Branch if not equal --------------------
+				case (byte) 0xD0:
+					data1 = memory[PC++];
+					if (!Z) PC += data1;
+					break;	
+					
+				// -------------------- BPL - Branch if positive --------------------
+				case (byte) 0x10:
+					data1 = memory[PC++];
+					if (!N) PC += data1;
+					break;	
+				
+				// -------------------- BVC - Branch if overflow clear --------------------
+				case (byte) 0x50:
+					data1 = memory[PC++];
+					if (!V) PC += data1;
+					break;			
+					
+				// -------------------- BVS - Branch if overflow set --------------------
+				case (byte) 0x70:
+					data1 = memory[PC++];
+					if (V) PC += data1;
+					break;			
+					
+				// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+				// Status Flag Changes
+				// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *					
+				
+				// -------------------- CLC - Clear Carry Flag --------------------
+				case (byte) 0x18:
+					C = false;
+					break;					
+				
+				// -------------------- CLD - Clear Decimal Flag --------------------
+				case (byte) 0xD8:
+					D = false;
+					break;
+					
+				// -------------------- CLI - Clear Interrupt Flag --------------------
+				case (byte) 0x58:
+					I = false;
+					break;
+					
+				// -------------------- CLV - Clear Overflow Flag --------------------
+				case (byte) 0xB8:
+					V = false;
+					break;						
+				
+				// -------------------- SEC - Set Carry Flag --------------------
+				case (byte) 0x38:
+					C = true;
+					break;	
+					
+				// -------------------- SED - Set Decimal Flag --------------------
+				case (byte) 0xF8:
+					D = true;
+					break;
+					
+				// -------------------- SEI - Set Interrupt Flag --------------------
+				case (byte) 0x78:
+					I = true;
+					break;
+					
+				// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
+				// System Functions
+				// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *					
+				
+				// -------------------- BRK - Force Interrupt --------------------	
+				case (byte) 0x00:
+					// end program
+					PC = (short)lastAddr;
+					break;
+				
+					
+				// -------------------- NOP - No Operation --------------------
+				case (byte) 0xEA:
+					break;					
+					
 				default:
 					System.out.println("Error: Couldn't find instruction for opcode: " + opcode);
 					break;
 			}
 
 			// tmp print registers
-			System.out.printf("0x%04X: AC=0x%02X\n", PC, AC);
+			System.out.printf("0x%04X: AC=0x%02X, X=0x%02X\n", PC, AC, X);
 			System.out.println("flags: " + N + " " + V + " " + G + " " + B + " " + D + " " + I + " " + Z + " " + C);
 					
 			// 3. update UI
@@ -1698,7 +1799,18 @@ public class CSC350P2 {
 	// this will occur if the addition of two numbers causes a carry of the most significant bit
 	// or subtraction of two numbers requires a borrow into the most significant bit
 	public static boolean updateCFlag (byte AC, int opcode, short input) {
-// ** to do				
+// ** to do	
+		// opcode 1 = Add with Carry
+		if (opcode == 1) {
+			
+		// opcode 2 = Subtract with carry
+		} else if (opcode == 2) {
+
+// ** to do
+			
+		} else {
+			System.out.println("Error: Couldn't find opcode: " + opcode + " in updateCFlag");
+		}			
 		return false;	
 	}	
 	
