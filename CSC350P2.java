@@ -192,7 +192,7 @@ public class CSC350P2 {
 					data1 = memory[PC++];
 					data2 = memory[PC++];
 					
-					AC = memory[twoBytesToShort(data1, data2)];
+					AC = memory[twoBytesToShort(data2, data1)];
 					
 					// update flags
 					Z = updateZFlag(AC);
@@ -204,7 +204,7 @@ public class CSC350P2 {
 					data1 = memory[PC++];
 					data2 = memory[PC++];
 					
-					AC = memory[X + twoBytesToShort(data1, data2)];
+					AC = memory[X + twoBytesToShort(data2, data1)];
 					
 					// update flags
 					Z = updateZFlag(AC);
@@ -216,7 +216,7 @@ public class CSC350P2 {
 					data1 = memory[PC++];
 					data2 = memory[PC++];
 					
-					AC = memory[Y + twoBytesToShort(data1, data2)];
+					AC = memory[Y + twoBytesToShort(data2, data1)];
 					
 					// update flags
 					Z = updateZFlag(AC);
@@ -281,7 +281,7 @@ public class CSC350P2 {
 					data1 = memory[PC++];
 					data2 = memory[PC++];
 					
-					X = memory[twoBytesToShort(data1, data2)];
+					X = memory[twoBytesToShort(data2, data1)];
 					
 					// update flags
 					Z = updateZFlag(X);
@@ -293,7 +293,7 @@ public class CSC350P2 {
 					data1 = memory[PC++];
 					data2 = memory[PC++];
 					
-					X = memory[Y + twoBytesToShort(data1, data2)];
+					X = memory[Y + twoBytesToShort(data2, data1)];
 					
 					// update flags
 					Z = updateZFlag(X);
@@ -336,7 +336,7 @@ public class CSC350P2 {
 					data1 = memory[PC++];
 					data2 = memory[PC++];
 					
-					Y = memory[twoBytesToShort(data1, data2)];
+					Y = memory[twoBytesToShort(data2, data1)];
 					
 					// update flags
 					Z = updateZFlag(Y);
@@ -348,7 +348,7 @@ public class CSC350P2 {
 					data1 = memory[PC++];
 					data2 = memory[PC++];
 					
-					Y = memory[X + twoBytesToShort(data1, data2)];
+					Y = memory[X + twoBytesToShort(data2, data1)];
 					
 					// update flags
 					Z = updateZFlag(Y);
@@ -372,21 +372,21 @@ public class CSC350P2 {
 					// STA - Store Accumulator - Absolute (16-bit address)
 					data1 = memory[PC++];
 					data2 = memory[PC++];
-					memory[twoBytesToShort(data1, data2)] = AC;
+					memory[twoBytesToShort(data2, data1)] = AC;
 					break;					
 					
 				case (byte) 0x9D:
 					// STA - Store Accumulator - Absolute,X (16-bit address)
 					data1 = memory[PC++];
 					data2 = memory[PC++];		
-					memory[X + twoBytesToShort(data1, data2)] = AC;			
+					memory[X + twoBytesToShort(data2, data1)] = AC;			
 					break;
 					
 				case (byte) 0x99:
 					// STA - Store Accumulator - Absolute,Y (16-bit address)
 					data1 = memory[PC++];
 					data2 = memory[PC++];
-					memory[Y + twoBytesToShort(data1, data2)] = AC;				
+					memory[Y + twoBytesToShort(data2, data1)] = AC;				
 					break;	
 					
 				case (byte) 0x81:
@@ -418,7 +418,7 @@ public class CSC350P2 {
 					// STX - Store X Register - Absolute (16-bit address)
 					data1 = memory[PC++];
 					data2 = memory[PC++];
-					memory[twoBytesToShort(data1, data2)] = X;
+					memory[twoBytesToShort(data2, data1)] = X;
 					break;					
 					
 				// -------------------- STY - Store Y Register  --------------------							
@@ -438,7 +438,7 @@ public class CSC350P2 {
 					// STY - Store Y Register - Absolute (16-bit address)
 					data1 = memory[PC++];
 					data2 = memory[PC++];
-					memory[twoBytesToShort(data1, data2)] = Y;
+					memory[twoBytesToShort(data2, data1)] = Y;
 					break;							
 		
 				// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
@@ -562,7 +562,7 @@ public class CSC350P2 {
 					// AND - Logical AND - Absolute (16-bit address)
 					data1 = memory[PC++];
 					data2 = memory[PC++];	
-					AC = (byte)(AC & memory[twoBytesToShort(data1, data2)]);
+					AC = (byte)(AC & memory[twoBytesToShort(data2, data1)]);
 					
 					// update flags
 					Z = updateZFlag(AC);
@@ -573,7 +573,7 @@ public class CSC350P2 {
 					// AND - Logical AND - Absolute,X (16-bit address)
 					data1 = memory[PC++];
 					data2 = memory[PC++];
-					AC = (byte)(AC & memory[X + twoBytesToShort(data1, data2)]);
+					AC = (byte)(AC & memory[X + twoBytesToShort(data2, data1)]);
 					
 					// update flags
 					Z = updateZFlag(AC);
@@ -584,7 +584,7 @@ public class CSC350P2 {
 					// AND - Logical AND - Absolute,Y (16-bit address)
 					data1 = memory[PC++];
 					data2 = memory[PC++];
-					AC = (byte)(AC & memory[Y + twoBytesToShort(data1, data2)]);
+					AC = (byte)(AC & memory[Y + twoBytesToShort(data2, data1)]);
 					
 					// update flags
 					Z = updateZFlag(AC);
@@ -646,7 +646,7 @@ public class CSC350P2 {
 					// EOR - Exclusive OR - Absolute (16-bit address)
 					data1 = memory[PC++];
 					data2 = memory[PC++];	
-					AC = (byte)(AC ^ memory[twoBytesToShort(data1, data2)]);
+					AC = (byte)(AC ^ memory[twoBytesToShort(data2, data1)]);
 					
 					// update flags
 					Z = updateZFlag(AC);
@@ -657,7 +657,7 @@ public class CSC350P2 {
 					// EOR - Exclusive OR - Absolute,X (16-bit address)
 					data1 = memory[PC++];
 					data2 = memory[PC++];
-					AC = (byte)(AC ^ memory[X + twoBytesToShort(data1, data2)]);
+					AC = (byte)(AC ^ memory[X + twoBytesToShort(data2, data1)]);
 					
 					// update flags
 					Z = updateZFlag(AC);
@@ -668,7 +668,7 @@ public class CSC350P2 {
 					// EOR - Exclusive OR - Absolute,Y (16-bit address)
 					data1 = memory[PC++];
 					data2 = memory[PC++];
-					AC = (byte)(AC ^ memory[Y + twoBytesToShort(data1, data2)]);
+					AC = (byte)(AC ^ memory[Y + twoBytesToShort(data2, data1)]);
 					
 					// update flags
 					Z = updateZFlag(AC);
@@ -730,7 +730,7 @@ public class CSC350P2 {
 					// ORA - Inclusive OR - Absolute (16-bit address)
 					data1 = memory[PC++];
 					data2 = memory[PC++];	
-					AC = (byte)(AC | memory[twoBytesToShort(data1, data2)]);
+					AC = (byte)(AC | memory[twoBytesToShort(data2, data1)]);
 					
 					// update flags
 					Z = updateZFlag(AC);
@@ -741,7 +741,7 @@ public class CSC350P2 {
 					// ORA - Inclusive OR - Absolute,X (16-bit address)
 					data1 = memory[PC++];
 					data2 = memory[PC++];
-					AC = (byte)(AC | memory[X + twoBytesToShort(data1, data2)]);
+					AC = (byte)(AC | memory[X + twoBytesToShort(data2, data1)]);
 					
 					// update flags
 					Z = updateZFlag(AC);
@@ -752,7 +752,7 @@ public class CSC350P2 {
 					// ORA - Inclusive OR - Absolute,Y (16-bit address)
 					data1 = memory[PC++];
 					data2 = memory[PC++];
-					AC = (byte)(AC | memory[Y + twoBytesToShort(data1, data2)]);
+					AC = (byte)(AC | memory[Y + twoBytesToShort(data2, data1)]);
 					
 					// update flags
 					Z = updateZFlag(AC);
@@ -796,7 +796,7 @@ public class CSC350P2 {
 					// BIT - Bit Test - Absolute
 					data1 = memory[PC++];
 					data2 = memory[PC++];	
-					tmp = (byte)(AC & memory[twoBytesToShort(data1, data2)]);
+					tmp = (byte)(AC & memory[twoBytesToShort(data2, data1)]);
 					
 					// update flags
 					Z = updateZFlag(tmp);
@@ -856,10 +856,10 @@ public class CSC350P2 {
 					data1 = memory[PC++];
 					data2 = memory[PC++];
 					
-					V = updateVFlag(AC, 1, memory[twoBytesToShort(data1, data2)]);	// check overflow
-					C = updateCFlag(AC, 1, memory[twoBytesToShort(data1, data2)]);	// check carry		
+					V = updateVFlag(AC, 1, memory[twoBytesToShort(data2, data1)]);	// check overflow
+					C = updateCFlag(AC, 1, memory[twoBytesToShort(data2, data1)]);	// check carry		
 					
-					AC += memory[twoBytesToShort(data1, data2)];
+					AC += memory[twoBytesToShort(data2, data1)];
 					
 					// update flags
 					Z = updateZFlag(AC);
@@ -871,10 +871,10 @@ public class CSC350P2 {
 					data1 = memory[PC++];
 					data2 = memory[PC++];
 					
-					V = updateVFlag(AC, 1, memory[X + twoBytesToShort(data1, data2)]);	// check overflow
-					C = updateCFlag(AC, 1, memory[X + twoBytesToShort(data1, data2)]);	// check carry							
+					V = updateVFlag(AC, 1, memory[X + twoBytesToShort(data2, data1)]);	// check overflow
+					C = updateCFlag(AC, 1, memory[X + twoBytesToShort(data2, data1)]);	// check carry							
 					
-					AC += memory[X + twoBytesToShort(data1, data2)];
+					AC += memory[X + twoBytesToShort(data2, data1)];
 					
 					// update flags
 					Z = updateZFlag(AC);
@@ -886,10 +886,10 @@ public class CSC350P2 {
 					data1 = memory[PC++];
 					data2 = memory[PC++];
 	
-					V = updateVFlag(AC, 1, memory[Y + twoBytesToShort(data1, data2)]);	// check overflow
-					C = updateCFlag(AC, 1, memory[Y + twoBytesToShort(data1, data2)]);	// check carry						
+					V = updateVFlag(AC, 1, memory[Y + twoBytesToShort(data2, data1)]);	// check overflow
+					C = updateCFlag(AC, 1, memory[Y + twoBytesToShort(data2, data1)]);	// check carry						
 					
-					AC += memory[Y + twoBytesToShort(data1, data2)];
+					AC += memory[Y + twoBytesToShort(data2, data1)];
 					
 					// update flags
 					Z = updateZFlag(AC);
@@ -972,10 +972,10 @@ public class CSC350P2 {
 					data1 = memory[PC++];
 					data2 = memory[PC++];
 					
-					V = updateVFlag(AC, 2, memory[twoBytesToShort(data1, data2)]);	// check overflow
-					C = updateCFlag(AC, 2, memory[twoBytesToShort(data1, data2)]);	// check carry		
+					V = updateVFlag(AC, 2, memory[twoBytesToShort(data2, data1)]);	// check overflow
+					C = updateCFlag(AC, 2, memory[twoBytesToShort(data2, data1)]);	// check carry		
 				
-					AC -= memory[twoBytesToShort(data1, data2)];
+					AC -= memory[twoBytesToShort(data2, data1)];
 					
 					// update flags
 					Z = updateZFlag(AC);
@@ -987,10 +987,10 @@ public class CSC350P2 {
 					data1 = memory[PC++];
 					data2 = memory[PC++];
 					
-					V = updateVFlag(AC, 2, memory[X + twoBytesToShort(data1, data2)]);	// check overflow
-					C = updateCFlag(AC, 2, memory[X + twoBytesToShort(data1, data2)]);	// check carry							
+					V = updateVFlag(AC, 2, memory[X + twoBytesToShort(data2, data1)]);	// check overflow
+					C = updateCFlag(AC, 2, memory[X + twoBytesToShort(data2, data1)]);	// check carry							
 					
-					AC -= memory[X + twoBytesToShort(data1, data2)];
+					AC -= memory[X + twoBytesToShort(data2, data1)];
 					
 					// update flags
 					Z = updateZFlag(AC);
@@ -1002,10 +1002,10 @@ public class CSC350P2 {
 					data1 = memory[PC++];
 					data2 = memory[PC++];
 	
-					V = updateVFlag(AC, 2, memory[Y + twoBytesToShort(data1, data2)]);	// check overflow
-					C = updateCFlag(AC, 2, memory[Y + twoBytesToShort(data1, data2)]);	// check carry						
+					V = updateVFlag(AC, 2, memory[Y + twoBytesToShort(data2, data1)]);	// check overflow
+					C = updateCFlag(AC, 2, memory[Y + twoBytesToShort(data2, data1)]);	// check carry						
 					
-					AC -= memory[Y + twoBytesToShort(data1, data2)];
+					AC -= memory[Y + twoBytesToShort(data2, data1)];
 					
 					// update flags
 					Z = updateZFlag(AC);
@@ -1077,9 +1077,9 @@ public class CSC350P2 {
 					data2 = memory[PC++];
 					
 					// update flags
-					C = AC >= memory[twoBytesToShort(data1, data2)] ? true : false;
-					Z = AC == memory[twoBytesToShort(data1, data2)] ? true : false;										
-					N = updateNFlag((byte)(AC - memory[twoBytesToShort(data1, data2)]));	
+					C = AC >= memory[twoBytesToShort(data2, data1)] ? true : false;
+					Z = AC == memory[twoBytesToShort(data2, data1)] ? true : false;										
+					N = updateNFlag((byte)(AC - memory[twoBytesToShort(data2, data1)]));	
 					break;	
 					
 				case (byte) 0xDD:
@@ -1088,9 +1088,9 @@ public class CSC350P2 {
 					data2 = memory[PC++];
 					
 					// update flags
-					C = AC >= memory[X + twoBytesToShort(data1, data2)] ? true : false;
-					Z = AC == memory[X + twoBytesToShort(data1, data2)] ? true : false;										
-					N = updateNFlag((byte)(AC - memory[X + twoBytesToShort(data1, data2)]));
+					C = AC >= memory[X + twoBytesToShort(data2, data1)] ? true : false;
+					Z = AC == memory[X + twoBytesToShort(data2, data1)] ? true : false;										
+					N = updateNFlag((byte)(AC - memory[X + twoBytesToShort(data2, data1)]));
 					break;
 					
 				case (byte) 0xD9:
@@ -1099,9 +1099,9 @@ public class CSC350P2 {
 					data2 = memory[PC++];
 	
 					// update flags
-					C = AC >= memory[Y + twoBytesToShort(data1, data2)] ? true : false;
-					Z = AC == memory[Y + twoBytesToShort(data1, data2)] ? true : false;										
-					N = updateNFlag((byte)(AC - memory[Y + twoBytesToShort(data1, data2)]));
+					C = AC >= memory[Y + twoBytesToShort(data2, data1)] ? true : false;
+					Z = AC == memory[Y + twoBytesToShort(data2, data1)] ? true : false;										
+					N = updateNFlag((byte)(AC - memory[Y + twoBytesToShort(data2, data1)]));
 					break;
 					
 				case (byte) 0xC1:
@@ -1151,9 +1151,9 @@ public class CSC350P2 {
 					data2 = memory[PC++];
 					
 					// update flags
-					C = X >= memory[twoBytesToShort(data1, data2)] ? true : false;
-					Z = X == memory[twoBytesToShort(data1, data2)] ? true : false;										
-					N = updateNFlag((byte)(X - memory[twoBytesToShort(data1, data2)]));	
+					C = X >= memory[twoBytesToShort(data2, data1)] ? true : false;
+					Z = X == memory[twoBytesToShort(data2, data1)] ? true : false;										
+					N = updateNFlag((byte)(X - memory[twoBytesToShort(data2, data1)]));	
 					break;		
 					
 				// -------------------- CPY - Compare Y Register --------------------		
@@ -1183,9 +1183,9 @@ public class CSC350P2 {
 					data2 = memory[PC++];
 					
 					// update flags
-					C = Y >= memory[twoBytesToShort(data1, data2)] ? true : false;
-					Z = Y == memory[twoBytesToShort(data1, data2)] ? true : false;								
-					N = updateNFlag((byte)(Y - memory[twoBytesToShort(data1, data2)]));	
+					C = Y >= memory[twoBytesToShort(data2, data1)] ? true : false;
+					Z = Y == memory[twoBytesToShort(data2, data1)] ? true : false;								
+					N = updateNFlag((byte)(Y - memory[twoBytesToShort(data2, data1)]));	
 					break;	
 					
 				// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
@@ -1221,8 +1221,8 @@ public class CSC350P2 {
 					memory[twoBytesToShort(data1, data2)]++;	
 
 					// update flags
-					Z = updateZFlag(memory[twoBytesToShort(data1, data2)]);
-					N = updateNFlag(memory[twoBytesToShort(data1, data2)]);	
+					Z = updateZFlag(memory[twoBytesToShort(data2, data1)]);
+					N = updateNFlag(memory[twoBytesToShort(data2, data1)]);	
 					break;
 					
 				case (byte) 0xFE:
@@ -1232,8 +1232,8 @@ public class CSC350P2 {
 					memory[X + twoBytesToShort(data1, data2)]++;
 					
 					// update flags
-					Z = updateZFlag(memory[X + twoBytesToShort(data1, data2)]);
-					N = updateNFlag(memory[X + twoBytesToShort(data1, data2)]);					
+					Z = updateZFlag(memory[X + twoBytesToShort(data2, data1)]);
+					N = updateNFlag(memory[X + twoBytesToShort(data2, data1)]);					
 					break;
 					
 				// -------------------- INX - Increment X Register --------------------	
@@ -1281,8 +1281,8 @@ public class CSC350P2 {
 					memory[twoBytesToShort(data1, data2)]--;	
 
 					// update flags
-					Z = updateZFlag(memory[twoBytesToShort(data1, data2)]);
-					N = updateNFlag(memory[twoBytesToShort(data1, data2)]);	
+					Z = updateZFlag(memory[twoBytesToShort(data2, data1)]);
+					N = updateNFlag(memory[twoBytesToShort(data2, data1)]);	
 					break;
 					
 				case (byte) 0xDE:
@@ -1292,8 +1292,8 @@ public class CSC350P2 {
 					memory[X + twoBytesToShort(data1, data2)]--;
 					
 					// update flags
-					Z = updateZFlag(memory[X + twoBytesToShort(data1, data2)]);
-					N = updateNFlag(memory[X + twoBytesToShort(data1, data2)]);					
+					Z = updateZFlag(memory[X + twoBytesToShort(data2, data1)]);
+					N = updateNFlag(memory[X + twoBytesToShort(data2, data1)]);					
 					break;	
 				
 				// -------------------- DEX - Decrement X Register --------------------	
@@ -1355,26 +1355,26 @@ public class CSC350P2 {
 					// ASL - Arithmetic Shift Left - Absolute (16-bit address)
 					data1 = memory[PC++];
 					data2 = memory[PC++];
-					C = (((byte) memory[twoBytesToShort(data1, data2)] & 128) == 1)? true : false;	// check for carry
+					C = (((byte) memory[twoBytesToShort(data2, data1)] & 128) == 1)? true : false;	// check for carry
 					
-					memory[twoBytesToShort(data1, data2)] = (byte)(memory[twoBytesToShort(data1, data2)] << 2);	
+					memory[twoBytesToShort(data2, data1)] = (byte)(memory[twoBytesToShort(data2, data1)] << 2);	
 
 					// update flags
-					Z = updateZFlag(memory[twoBytesToShort(data1, data2)]);
-					N = updateNFlag(memory[twoBytesToShort(data1, data2)]);	
+					Z = updateZFlag(memory[twoBytesToShort(data2, data1)]);
+					N = updateNFlag(memory[twoBytesToShort(data2, data1)]);	
 					break;
 					
 				case (byte) 0x1E:
 					// ASL - Arithmetic Shift Left - Absolute,X (16-bit address)
 					data1 = memory[PC++];
 					data2 = memory[PC++];
-					C = (((byte) memory[X + twoBytesToShort(data1, data2)] & 128) == 1)? true : false;	// check for carry
+					C = (((byte) memory[X + twoBytesToShort(data2, data1)] & 128) == 1)? true : false;	// check for carry
 					
-					memory[X + twoBytesToShort(data1, data2)] = (byte)(memory[X + twoBytesToShort(data1, data2)] << 2);
+					memory[X + twoBytesToShort(data2, data1)] = (byte)(memory[X + twoBytesToShort(data2, data1)] << 2);
 					
 					// update flags
-					Z = updateZFlag(memory[X + twoBytesToShort(data1, data2)]);
-					N = updateNFlag(memory[X + twoBytesToShort(data1, data2)]);					
+					Z = updateZFlag(memory[X + twoBytesToShort(data2, data1)]);
+					N = updateNFlag(memory[X + twoBytesToShort(data2, data1)]);					
 					break;						
 	
 				// -------------------- LSR - Logical Shift Right --------------------		
@@ -1420,28 +1420,28 @@ public class CSC350P2 {
 					// LSR - Logical Shift Right - Absolute (16-bit address)
 					data1 = memory[PC++];
 					data2 = memory[PC++];
-					tmp = (byte)(memory[twoBytesToShort(data1, data2)] & 1); 	// bit 0
+					tmp = (byte)(memory[twoBytesToShort(data2, data1)] & 1); 	// bit 0
 					C = (tmp == 1)? true : false;	// check for carry
 					
-					memory[twoBytesToShort(data1, data2)] = (byte)((memory[twoBytesToShort(data1, data2)] >> 2) + (128 * tmp));
+					memory[twoBytesToShort(data2, data1)] = (byte)((memory[twoBytesToShort(data2, data1)] >> 2) + (128 * tmp));
 
 					// update flags
-					Z = updateZFlag(memory[twoBytesToShort(data1, data2)]);
-					N = updateNFlag(memory[twoBytesToShort(data1, data2)]);	
+					Z = updateZFlag(memory[twoBytesToShort(data2, data1)]);
+					N = updateNFlag(memory[twoBytesToShort(data2, data1)]);	
 					break;
 					
 				case (byte) 0x5E:
 					// LSR - Logical Shift Right - Absolute,X (16-bit address)
 					data1 = memory[PC++];
 					data2 = memory[PC++];
-					tmp = (byte)(memory[X + twoBytesToShort(data1, data2)] & 1); 	// bit 0
+					tmp = (byte)(memory[X + twoBytesToShort(data2, data1)] & 1); 	// bit 0
 					C = (tmp == 1)? true : false;	// check for carry
 					
 					memory[X + twoBytesToShort(data1, data2)] = (byte)((memory[X + twoBytesToShort(data1, data2)] >> 2) + (128 * tmp));
 					
 					// update flags
-					Z = updateZFlag(memory[X + twoBytesToShort(data1, data2)]);
-					N = updateNFlag(memory[X + twoBytesToShort(data1, data2)]);					
+					Z = updateZFlag(memory[X + twoBytesToShort(data2, data1)]);
+					N = updateNFlag(memory[X + twoBytesToShort(data2, data1)]);					
 					break;						
 				
 				// -------------------- ROL - Rotate Left --------------------		
@@ -1490,30 +1490,30 @@ public class CSC350P2 {
 					// ROL - Rotate Left - Absolute (16-bit address)
 					data1 = memory[PC++];
 					data2 = memory[PC++];
-					tmp = (byte)(memory[twoBytesToShort(data1, data2)] & 128);	// old bit 7
+					tmp = (byte)(memory[twoBytesToShort(data2, data1)] & 128);	// old bit 7
 
-					memory[twoBytesToShort(data1, data2)] = (byte)(memory[twoBytesToShort(data1, data2)] << 1);
+					memory[twoBytesToShort(data2, data1)] = (byte)(memory[twoBytesToShort(data2, data1)] << 1);
 					if (C) memory[twoBytesToShort(data1, data2)]++;		// bit 0 is filled with current value of the carry flag
 
 					// update flags
 					C = (tmp == 128)? true : false; // check for carry
-					Z = updateZFlag(memory[twoBytesToShort(data1, data2)]);
-					N = updateNFlag(memory[twoBytesToShort(data1, data2)]);	
+					Z = updateZFlag(memory[twoBytesToShort(data2, data1)]);
+					N = updateNFlag(memory[twoBytesToShort(data2, data1)]);	
 					break;
 					
 				case (byte) 0x3E:
 					// ROL - Rotate Left - Absolute,X (16-bit address)
 					data1 = memory[PC++];
 					data2 = memory[PC++];
-					tmp = (byte)(memory[X + twoBytesToShort(data1, data2)] & 128);	// old bit 7 
+					tmp = (byte)(memory[X + twoBytesToShort(data2, data1)] & 128);	// old bit 7 
 					
-					memory[X + twoBytesToShort(data1, data2)] = (byte)(memory[X + twoBytesToShort(data1, data2)] << 1);
-					if (C) memory[X + twoBytesToShort(data1, data2)]++;		// bit 0 is filled with current value of the carry flag
+					memory[X + twoBytesToShort(data2, data1)] = (byte)(memory[X + twoBytesToShort(data2, data1)] << 1);
+					if (C) memory[X + twoBytesToShort(data2, data1)]++;		// bit 0 is filled with current value of the carry flag
 					
 					// update flags
 					C = (tmp == 128)? true : false; // check for carry
-					Z = updateZFlag(memory[X + twoBytesToShort(data1, data2)]);
-					N = updateNFlag(memory[X + twoBytesToShort(data1, data2)]);					
+					Z = updateZFlag(memory[X + twoBytesToShort(data2, data1)]);
+					N = updateNFlag(memory[X + twoBytesToShort(data2, data1)]);					
 					break;					
 	
 				// -------------------- ROR - Rotate Right --------------------		
@@ -1562,30 +1562,30 @@ public class CSC350P2 {
 					// ROR - Rotate Right - Absolute (16-bit address)
 					data1 = memory[PC++];
 					data2 = memory[PC++];
-					tmp = (byte)(memory[twoBytesToShort(data1, data2)] & 1);	// old bit 0
+					tmp = (byte)(memory[twoBytesToShort(data2, data1)] & 1);	// old bit 0
 
-					memory[twoBytesToShort(data1, data2)] = (byte)(memory[twoBytesToShort(data1, data2)] >> 1);
-					if (C) memory[twoBytesToShort(data1, data2)] += 128;		// bit 7 is filled with current value of the carry flag
+					memory[twoBytesToShort(data2, data1)] = (byte)(memory[twoBytesToShort(data2, data1)] >> 1);
+					if (C) memory[twoBytesToShort(data2, data1)] += 128;		// bit 7 is filled with current value of the carry flag
 
 					// update flags
 					C = (tmp == 1)? true : false; // check for carry
-					Z = updateZFlag(memory[twoBytesToShort(data1, data2)]);
-					N = updateNFlag(memory[twoBytesToShort(data1, data2)]);	
+					Z = updateZFlag(memory[twoBytesToShort(data2, data1)]);
+					N = updateNFlag(memory[twoBytesToShort(data2, data1)]);	
 					break;
 					
 				case (byte) 0x7E:
 					// ROR - Rotate Right - Absolute,X (16-bit address)
 					data1 = memory[PC++];
 					data2 = memory[PC++];
-					tmp = (byte)(memory[X + twoBytesToShort(data1, data2)] & 1);	// old bit 0 
+					tmp = (byte)(memory[X + twoBytesToShort(data2, data1)] & 1);	// old bit 0 
 					
-					memory[X + twoBytesToShort(data1, data2)] = (byte)(memory[X + twoBytesToShort(data1, data2)] >> 1);
-					if (C) memory[X + twoBytesToShort(data1, data2)] += 128;		// bit 7 is filled with current value of the carry flag
+					memory[X + twoBytesToShort(data2, data1)] = (byte)(memory[X + twoBytesToShort(data2, data1)] >> 1);
+					if (C) memory[X + twoBytesToShort(data2, data1)] += 128;		// bit 7 is filled with current value of the carry flag
 					
 					// update flags
 					C = (tmp == 1)? true : false; // check for carry
-					Z = updateZFlag(memory[X + twoBytesToShort(data1, data2)]);
-					N = updateNFlag(memory[X + twoBytesToShort(data1, data2)]);					
+					Z = updateZFlag(memory[X + twoBytesToShort(data2, data1)]);
+					N = updateNFlag(memory[X + twoBytesToShort(data2, data1)]);					
 					break;					
 			
 				// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
@@ -1597,13 +1597,13 @@ public class CSC350P2 {
 					// JMP - Jump - Absolute (16-bit address)
 					data1 = memory[PC++];
 					data2 = memory[PC++];
-					PC = memory[twoBytesToShort(data1, data2)];
+					PC = memory[twoBytesToShort(data2, data1)];
 					break;
 				case (byte) 0x6C:
 					// JMP - Jump - (Indirect) (16-bit address)
 					data1 = memory[PC++]; 
 					data2 = memory[PC++]; 
-					PC = twoBytesToShort(memory[memory[twoBytesToShort(data1, data2)]], memory[memory[twoBytesToShort(data1, data2)] + 1]);				
+					PC = twoBytesToShort(memory[memory[twoBytesToShort(data2, data1)]], memory[memory[twoBytesToShort(data2, data1)] + 1]);				
 					break;		
 			
 				// -------------------- JSR - Jump to Subroutine --------------------	
@@ -1814,15 +1814,43 @@ public class CSC350P2 {
 	// this will occur if the addition of two numbers causes a carry of the most significant bit
 	// or subtraction of two numbers requires a borrow into the most significant bit
 	public static boolean updateCFlag (byte AC, int opcode, short input) {
-// ** to do	
 		// opcode 1 = Add with Carry
 		if (opcode == 1) {
-			
+			if (AC > 0 && input > 0) {
+				// both positive
+				if (AC + input > 127) 
+					return true;
+				return false;
+			} else if (AC < 0 && input < 0) {
+				// both negative
+				if (AC + input < -128)
+					return true;
+				return false;
+			} else {
+				// one postive and one negative
+				return false;
+			}
 		// opcode 2 = Subtract with carry
 		} else if (opcode == 2) {
-
-// ** to do
-			
+			if (AC > 0 && input > 0) {
+				if (AC > input)
+					return false;
+				return true;
+			} else if (AC > 0 && input < 0) {
+				if (AC - input > 127)
+					return true;
+				return false;
+			} else if (AC < 0 && input > 0) {
+				if (AC - input < -128)
+					return true;
+				return false;
+			} else if (AC < 0 && input < 0) {
+				if (AC > input)
+					return false;
+				return true;
+			} else {
+				return false;
+			}		
 		} else {
 			System.out.println("Error: Couldn't find opcode: " + opcode + " in updateCFlag");
 		}			
@@ -1844,9 +1872,12 @@ public class CSC350P2 {
 			
 		// opcode 2 = Subtract with carry
 		} else if (opcode == 2) {
-
-// ** to do
-			
+			byte tmp = (byte) (AC - input);
+			if (AC > 0 && input < 0 && tmp < 0)
+				return true;
+			if (AC < 0 && input > 0 && tmp > 0)
+				return true;
+			return false;
 		} else {
 			System.out.println("Error: Couldn't find opcode: " + opcode + " in updateVFlag");
 		}		
