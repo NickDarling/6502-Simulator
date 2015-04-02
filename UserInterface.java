@@ -7,7 +7,7 @@ import java.util.*;
 
 public class UserInterface extends JFrame {
     
-	//initializing all variables
+	//initializing all variables for later use
 	JButton stepFile;
 	JTextField pcReg;
 	JTextField xReg;
@@ -27,7 +27,8 @@ public class UserInterface extends JFrame {
 	
 	JTextArea inputTextField;
 	
-	String fileText = null;
+	int intPC = 0;
+	String HexStringPC = null;
 	
 	int intN = 0;
 	int intV = 0;
@@ -37,31 +38,47 @@ public class UserInterface extends JFrame {
 	int intI = 0;
 	int intZ = 0;
 	int intC = 0;
-	
-	boolean pressed = false;
+        
+	int lineIndicatorOffset = 45;
+    boolean pressed = false;
+    boolean getFile = false;
 
-    public void createUI() {
-    
+    public void createUI() {  	
     	setTitle("6502-Simulator");
         setLayout(null);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(800, 600);
         setVisible(true);
-          
+  
+    	Dimension dim = Toolkit.getDefaultToolkit().getScreenSize();
+    	this.setLocation(dim.width/2-this.getSize().width/2, dim.height/2-this.getSize().height/2);       
+        
         // step button
         JButton stepButton = new JButton("Step");     
         stepButton.setBackground(Color.white);
-        stepButton.setBounds(630, 395, 100, 40);
+        stepButton.setBounds(585, 395, 100, 40);
         add(stepButton);
 
         ActionListener actionListener = new ActionListener() {
             public void actionPerformed(ActionEvent actionEvent) {
-              //System.out.println("I was selected.");
             	pressed = true;
             }
           };
-        stepButton.addActionListener(actionListener);        
+         stepButton.addActionListener(actionListener);    
+          
+        // open file button
+        JButton openButton = new JButton("Open");     
+        openButton.setBackground(Color.white);
+        openButton.setBounds(450, 395, 100, 40);
+        add(openButton);
 
+        ActionListener actionListener2 = new ActionListener() {
+            public void actionPerformed(ActionEvent actionEvent) {
+            	getFile = true;
+            }
+          };
+          openButton.addActionListener(actionListener2);             
+        
         //*********************************************************
         //labels for registers
         //*********************************************************
@@ -230,53 +247,59 @@ public class UserInterface extends JFrame {
         cFlag.setBounds(660, 310, 25, 25); 
         
         
-         //*********************************************************
-        //add text area with scrollbar for input file ***scrollbar does not work yet
-         //*********************************************************
+        //*********************************************************
+        //text field for input text
+        //*********************************************************
         inputTextField = new JTextArea(400, 450);
         inputTextField.setLineWrap(true);
         JScrollPane scrollPane = new JScrollPane(inputTextField); 
         inputTextField.setEditable(false);
+        inputTextField.setFont(new Font("Courier New", Font.PLAIN, 12));
         add(inputTextField);
         inputTextField.setBackground(Color.white);
-        inputTextField.setBounds(10, 50, 400, 450);         
+        inputTextField.setBounds(10, 50, 400, 450);
+        
     }
     
+    //this method converts the file chosen by the user to a string
+    //the string is returned to the main program to be interpreted
     public String fileUpload() {
-    	    
-                StringBuilder sb = new StringBuilder();
-                String line = null;
-               
-                JFileChooser chooser = new JFileChooser();
-                chooser.showOpenDialog(null);
-                File f = chooser.getSelectedFile();
-                String filename = f.getAbsolutePath();
+	try {
+        StringBuilder sb = new StringBuilder();
+        String line = null;
                 
-                //read file. if file can't be read, show error message
-    			
-                try {
-                    FileReader reader = new FileReader(filename);
-                    BufferedReader br = new BufferedReader(reader);
+	JFileChooser chooser = new JFileChooser();
+	chooser.showOpenDialog(null);
+	File f = chooser.getSelectedFile();
+	String filename = f.getAbsolutePath();
+
+	try {
+		FileReader reader = new FileReader(filename);
+		BufferedReader br = new BufferedReader(reader);
                     
-                    while ((line = br.readLine()) != null) {
-                    	    sb.append(line + "\n");
-                    }
-                }catch (Exception x) {
-                    System.out.println("Can't load file");
-                }
-                inputTextField.setText(sb.toString());
-                return sb.toString();             
-        
-        
-    }
+		while ((line = br.readLine()) != null) {
+			sb.append(line + "\n");
+		}
+	}catch (Exception x) {
+		System.out.println("Can't load file");
+	}
+	inputTextField.setText(sb.toString());
+	getFile = true;
+	return sb.toString();  
+	} catch (Exception e) {
+		return null;
+	}   
+    }    
     
-    public String getFileText(){
-    	    return fileText;
-    }	    
+    //this method prints the values of registers to the text fields on the ui
     public void updateRegisters (short PC, byte AC, byte X, byte Y, byte SR, byte SP) {
 
-    	//converts registers to strings and prints to register text fields on ui
-    	pcReg.setText(String.valueOf(PC));
+    	// short --> int --> hex string
+    	intPC = PC;  
+    	HexStringPC = Integer.toHexString(intPC);
+    	pcReg.setText("0x0" + HexStringPC);
+    	    
+    	//converts bytes to strings for printing
         accReg.setText(String.valueOf(AC));
         xReg.setText(String.valueOf(X));
         yReg.setText(String.valueOf(Y));
@@ -285,7 +308,8 @@ public class UserInterface extends JFrame {
       
         
     }
-
+    
+    //this method prints the values of flags to the text fields on the ui
     public void updateFlags (boolean N, boolean V, boolean G, boolean B, boolean D, boolean I, boolean Z, boolean C) {
         
     	//converts flags to 1 or 0    
@@ -298,7 +322,7 @@ public class UserInterface extends JFrame {
 	intZ = (Z) ? 1 : 0; 
 	intC = (C) ? 1 : 0;     
         
-	//converts flag integers to strings and prints to flag text fields on ui 
+	//converts flag integers to strings for printing
         nFlag.setText(String.valueOf(intN));        
         vFlag.setText(String.valueOf(intV));        
         gFlag.setText(String.valueOf(intG));
@@ -310,4 +334,28 @@ public class UserInterface extends JFrame {
                 
         
     }   
+    
+    public void updateText (String [] lines, int currAddr) {
+    	String text = "\n";
+    	
+    	for (int i = 0; i < lines.length; i++) {
+    		if (!lines[i].trim().isEmpty()) {
+	        	String []split = (lines[i].substring(1)).split("\\s+");	
+	    		if (split.length > 1 && Integer.parseInt(split[0], 16) == currAddr) {
+	    			text += "  >>>   ";
+	    			text += lines[i];
+	    			for (int j = lines[i].length(); j < lineIndicatorOffset; j++)
+	    				text += " ";
+	    			text += "<<<";
+	    		} else {
+	    			text += "        ";
+	    			text += lines[i];
+	    		}
+	    		text += "\n";
+    		} else {
+    			text += "\n";
+    		}
+    	}
+    	inputTextField.setText(text);
+    }
 }

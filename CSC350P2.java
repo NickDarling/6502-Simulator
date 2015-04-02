@@ -45,8 +45,24 @@ public class CSC350P2 {
 		UserInterface ui = new UserInterface();
 		ui.createUI();
 		//ui.fileUpload();
-        String fileToRead = ui.fileUpload();
-        
+        String fileToRead = "";
+		
+		// wait for open file press?	
+		while (ui.getFile == false) {
+			//System.out.println("waiting");
+            try {
+                Thread.sleep(200);                 //1000 milliseconds is one second.
+            } catch(InterruptedException ex) {
+                Thread.currentThread().interrupt();
+            } 	
+            
+            if (ui.getFile)
+            	fileToRead = ui.fileUpload();
+            if (fileToRead == null)
+            	ui.getFile = false;
+		}        
+		
+		
 		byte [] memory = new byte [TOTAL_MEMORY];	// 4 KB of memory
 
 		String line;
@@ -91,7 +107,7 @@ public class CSC350P2 {
 					// put data in memory
 					// split[0] = location in memory
 					// split[1] = value
-					System.out.println(split[0]);
+					memory[Integer.parseInt(split[0], 16)] = (byte)Integer.parseInt(split[1], 10);
 				} else {
 					// 3. save instruction opcode
 					int incr = 0;
@@ -141,7 +157,27 @@ public class CSC350P2 {
 		ui.pressed = false;
 		
 		// execute one instruction - end program once PC is finishes last line of code
-		while (PC < lastAddr) {			
+		while (PC < lastAddr) {	
+			// tmp print registers
+			System.out.printf("0x%04X: AC=0x%02X, X=0x%02X\n", PC, AC, X);
+			System.out.println("flags: " + N + " " + V + " " + G + " " + B + " " + D + " " + I + " " + Z + " " + C);
+					
+			// -1. update UI
+			ui.updateRegisters(PC, AC, X, Y, SR, SP);
+			ui.updateFlags(N, V, G, B, D, I, Z, C);
+			ui.updateText(fileLines, PC);
+			
+			// 0. wait for button press?	
+			while (ui.pressed == false) {
+				//System.out.println("waiting");
+	            try {
+	                Thread.sleep(200);                 //1000 milliseconds is one second.
+	            } catch(InterruptedException ex) {
+	                Thread.currentThread().interrupt();
+	            } 	
+			}
+			ui.pressed = false;				
+			
 			// 1. read opcode
 			byte opcode = memory[PC++];		// contains instruction type	
 			byte data1;		// first byte of data
@@ -494,18 +530,18 @@ public class CSC350P2 {
 					
 				// -------------------- PHA - Push Accumulator --------------------	
 				case (byte) 0x48:
-					memory[STARTING_STACK_LOCATION - (SP++ & 0xFF)] = AC;
+					memory[STARTING_STACK_LOCATION - (SP++)] = AC;
 				
 					break;
 					
 				// -------------------- PHP - Push Processor Status --------------------	
 				case (byte) 0x08:
-					memory[STARTING_STACK_LOCATION - (SP++ & 0xFF)] = flagsToByte(N, V, G, B, D, I, Z, C);			
+					memory[STARTING_STACK_LOCATION - (SP++)] = flagsToByte(N, V, G, B, D, I, Z, C);			
 					break;
 			
 				// -------------------- PLA - Pull Accumulator --------------------	
 				case (byte) 0x68:
-					AC = memory[STARTING_STACK_LOCATION - (SP-- & 0xFF)];	
+					AC = memory[STARTING_STACK_LOCATION - (SP--)];	
 					// update flags
 					Z = updateZFlag(AC);
 					N = updateNFlag(AC);					
@@ -513,7 +549,7 @@ public class CSC350P2 {
 					
 				// -------------------- PLP - Pull Processor Status --------------------	
 				case (byte) 0x28:
-					tmp = memory[STARTING_STACK_LOCATION - (SP-- & 0xFF)];
+					tmp = memory[STARTING_STACK_LOCATION - (SP--)];
 					C = (((byte)tmp & 1) == 1)? true : false;
 					Z = (((byte)tmp & 2) == 1)? true : false;
 					I = (((byte)tmp & 4) == 1)? true : false;
@@ -855,6 +891,10 @@ public class CSC350P2 {
 					// ADC - Add with Carry - Absolute (16-bit address)
 					data1 = memory[PC++];
 					data2 = memory[PC++];
+					
+					System.out.println("data2: " + data2 + ", data1:" + data1);
+					System.out.printf("data2: 0x%02X, data1: 0x%02X, result: 0x%04X \n", data2, data1, twoBytesToShort(data2, data1));
+					System.out.println(memory[twoBytesToShort(data2, data1)]);
 					
 					V = updateVFlag(AC, 1, memory[twoBytesToShort(data2, data1)]);	// check overflow
 					C = updateCFlag(AC, 1, memory[twoBytesToShort(data2, data1)]);	// check carry		
@@ -1597,13 +1637,13 @@ public class CSC350P2 {
 					// JMP - Jump - Absolute (16-bit address)
 					data1 = memory[PC++];
 					data2 = memory[PC++];
-					PC = memory[twoBytesToShort(data2, data1)];
+					PC = (short)twoBytesToShort(data2, data1);
 					break;
 				case (byte) 0x6C:
 					// JMP - Jump - (Indirect) (16-bit address)
 					data1 = memory[PC++]; 
 					data2 = memory[PC++]; 
-					PC = twoBytesToShort(memory[memory[twoBytesToShort(data2, data1)]], memory[memory[twoBytesToShort(data2, data1)] + 1]);				
+					PC = (short)twoBytesToShort(memory[twoBytesToShort(data2, data1)], memory[twoBytesToShort(data2, data1) + 1]);				
 					break;		
 			
 				// -------------------- JSR - Jump to Subroutine --------------------	
@@ -1616,7 +1656,7 @@ public class CSC350P2 {
 					memory[STARTING_STACK_LOCATION - (SP++ & 0xFF)] = (byte)(PC % 256);	// least significant byte
 					memory[STARTING_STACK_LOCATION - (SP++ & 0xFF)] = (byte)(PC / 256);	// most significant byte
 					
-					PC = twoBytesToShort(data1, data2);
+					PC = (short)twoBytesToShort(data1, data2);
 					
 					break;
 				
@@ -1624,7 +1664,7 @@ public class CSC350P2 {
 				case (byte) 0x60:
 					data1 = memory[STARTING_STACK_LOCATION - (SP++ & 0xFF)];
 					data2 = memory[STARTING_STACK_LOCATION - (SP++ & 0xFF)];
-					PC = twoBytesToShort(data2, data1);
+					PC = (short)twoBytesToShort(data2, data1);
 					break;
 					
 				// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * 
@@ -1724,10 +1764,32 @@ public class CSC350P2 {
 				
 				// -------------------- BRK - Force Interrupt --------------------	
 				case (byte) 0x00:
-					// end program
-					PC = (short)lastAddr;
+					memory[STARTING_STACK_LOCATION - (SP++)] = flagsToByte(N, V, G, B, D, I, Z, C);		
+					memory[STARTING_STACK_LOCATION - (SP++)] = (byte)((PC >> 8) & 0xFF);	
+					memory[STARTING_STACK_LOCATION - (SP++)] = (byte)(PC & 0x00FF);			
+					
+					PC = (short)twoBytesToShort(memory[0xFFFF], memory[0xFFFE]);
 					break;
 				
+				// -------------------- RTI - Return from Interrupt --------------------	
+				case (byte) 0x40:
+					// pull processor status
+					tmp = memory[STARTING_STACK_LOCATION - (SP--)];
+					C = (((byte)tmp & 1) == 1)? true : false;
+					Z = (((byte)tmp & 2) == 1)? true : false;
+					I = (((byte)tmp & 4) == 1)? true : false;
+					D = (((byte)tmp & 8) == 1)? true : false;
+					B = (((byte)tmp & 16) == 1)? true : false;
+					G = (((byte)tmp & 32) == 1)? true : false;
+					V = (((byte)tmp & 64) == 1)? true : false;
+					N = (((byte)tmp & 128) == 1)? true : false;		
+					
+					data1 = memory[STARTING_STACK_LOCATION - (SP--)];
+					data2 = memory[STARTING_STACK_LOCATION - (SP--)];				
+					
+					PC = (short)twoBytesToShort(data2, data1);
+					break;	
+					
 					
 				// -------------------- NOP - No Operation --------------------
 				case (byte) 0xEA:
@@ -1737,26 +1799,11 @@ public class CSC350P2 {
 					System.out.println("Error: Couldn't find instruction for opcode: " + opcode);
 					break;
 			}
-
-			// tmp print registers
-			System.out.printf("0x%04X: AC=0x%02X, X=0x%02X\n", PC, AC, X);
-			System.out.println("flags: " + N + " " + V + " " + G + " " + B + " " + D + " " + I + " " + Z + " " + C);
-					
-			// 3. update UI
-			ui.updateRegisters(PC, AC, X, Y, SR, SP);
-			ui.updateFlags(N, V, G, B, D, I, Z, C);
-			
-			// 4. wait for button press?	
-			while (ui.pressed == false) {
-				//System.out.println("waiting");
-	            try {
-	                Thread.sleep(200);                 //1000 milliseconds is one second.
-	            } catch(InterruptedException ex) {
-	                Thread.currentThread().interrupt();
-	            } 	
-			}
-			ui.pressed = false;	
 		}
+		// final update
+		ui.updateRegisters(PC, AC, X, Y, SR, SP);
+		ui.updateFlags(N, V, G, B, D, I, Z, C);
+		ui.updateText(fileLines, PC);		
 	}
 
 	// take string in base 16 and return byte
@@ -1775,8 +1822,10 @@ public class CSC350P2 {
 	}
 	
 	// take 2 bytes and create a short
-	public static short twoBytesToShort(byte b1, byte b2) {
-        return (short) ((b1 << 8) | b2);
+	public static int twoBytesToShort(byte b1, byte b2) {
+		short ub1 = (short)(b1 & 0xFF);
+		short ub2 = (short)(b2 & 0xFF);
+        return ((ub1*256 + ub2) & 0xFFFF);
 	}
 	
 	// takes all flags and returns a copy of the status flags as a byte
