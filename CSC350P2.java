@@ -28,6 +28,7 @@ public class CSC350P2 {
 		boolean Z = true;		// zero
 		boolean C = false;		// carry
 		
+		/*
 		// wait for open button press?
 		// open assembly code
 		Scanner scanner = null;
@@ -37,86 +38,93 @@ public class CSC350P2 {
 			System.out.println("Error: Couldn't open file");
 			System.exit(0);
 		}
+		*/
 		
+		//calls fileUpload to receive uploaded file for reading        
+		// create interface
+		UserInterface ui = new UserInterface();
+		ui.createUI();
+		//ui.fileUpload();
+        String fileToRead = ui.fileUpload();
+        
 		byte [] memory = new byte [TOTAL_MEMORY];	// 4 KB of memory
 
 		String line;
 		String[] split = null;
 		
+		/*
 		if (!scanner.hasNextLine()) {
 			System.out.println("Error: Can't read file");
 			scanner.close();	
 			System.exit(0);
 		}
-				
+		*/
+		
 		boolean first = true;	// true when first instruction - used to get initial PC value
+		boolean inData = false;
 		int lastAddr = 0;		// addr of last instruction
 		
 		// else assume no data and just code
 		// put program in memory
-		while (scanner.hasNextLine()) {
+		//while (scanner.hasNextLine()) {
+		String fileLines[] = fileToRead.split("\\r?\\n");
+		for (int j = 0; j < fileLines.length; j++) {
 			// 1. read line
-			line = scanner.nextLine();
+			line = fileLines[j];
+			//line = scanner.nextLine();
 			//System.out.println(line);
 			
 			// 2. split up line
 			// split[0] = address of instruction
 			// split[1] = instruction opcode
 			// (if instruction needs data) split [2] = data, split [3] = data
-			split = (line.substring(1)).split("\\s+");				
-			
-			// variable
-			if (split[0].equals("data")) {
-				// put data in memory
-				while (scanner.hasNextLine()) {
-					// 1. read line
-					line = scanner.nextLine();			
-			
-					// 2. split up line
-					if (!line.trim().isEmpty()) {	// check for blank line
-						split = (line.substring(1)).split("\\s+");	
-		
-						if (split[0].equals("code"))
+			if (!line.trim().isEmpty()) {
+				split = (line.substring(1)).split("\\s+");		
+				
+				if (split[0].equals("code")) {
+					inData = false;
+					
+				} else if (split[0].equals("data")) {
+					inData = true;
+				
+				} else if (inData) {
+					// put data in memory
+					// split[0] = location in memory
+					// split[1] = value
+					System.out.println(split[0]);
+				} else {
+					// 3. save instruction opcode
+					int incr = 0;
+					memory[strToShort(split[0]) + incr++] = strToByte(split[1]);
+					
+					// used to get intial PC value
+					if (first) {
+						PC = strToShort(split[0]);
+						first = false;
+					}
+					
+					// 4. save data values (if there are any)
+					// check if end of line or if token is > 2 characters (then it's a comment)
+					int i = 2;
+					while (split.length > i) {
+						if (split[i].length() <= 2) {
+							memory[strToShort(split[0]) + incr++] = strToByte(split[i++]);	// save data
+						} else {
 							break;
-						
-						// else
-						// split[0] = location in memory
-						// split[1] = value
-						memory[strToShort(split[0])] = strToByte(split[1]);	
+						}
 					}
-				}
-			} else {
-				// 3. save instruction opcode
-				int incr = 0;
-				memory[strToShort(split[0]) + incr++] = strToByte(split[1]);
-				
-				// used to get intial PC value
-				if (first) {
-					PC = strToShort(split[0]);
-					first = false;
-				}
-				
-				// 4. save data values (if there are any)
-				// check if end of line or if token is > 2 characters (then it's a comment)
-				int i = 2;
-				while (split.length > i) {
-					if (split[i].length() <= 2) {
-						memory[strToShort(split[0]) + incr++] = strToByte(split[i++]);	// save data
-					} else {
-						break;
+		
+					lastAddr = strToShort(split[0]) + incr;
+					
+					// 5. check if exceeded memory limit
+					if ((strToShort(split[0]) + incr) > TOTAL_MEMORY) {
+						System.out.println("Error: Can't fit program in memory");
+						System.exit(0);		
 					}
-				}
-	
-				lastAddr = strToShort(split[0]) + incr;
-				
-				// 5. check if exceeded memory limit
-				if ((strToShort(split[0]) + incr) > TOTAL_MEMORY) {
-					System.out.println("Error: Can't fit program in memory");
-					System.exit(0);		
 				}
 			}
 		}
-		scanner.close();	
+		//scanner.close();	
 
 		
 		// prints memory
@@ -130,12 +138,10 @@ public class CSC350P2 {
 		System.exit(0);
 		*/
 		
-		// create interface
-		// UserInterface ui = new UserInterface();
-		// ui.createUI();
+		ui.pressed = false;
 		
 		// execute one instruction - end program once PC is finishes last line of code
-		while (PC < lastAddr) {
+		while (PC < lastAddr) {			
 			// 1. read opcode
 			byte opcode = memory[PC++];		// contains instruction type	
 			byte data1;		// first byte of data
@@ -1737,10 +1743,19 @@ public class CSC350P2 {
 			System.out.println("flags: " + N + " " + V + " " + G + " " + B + " " + D + " " + I + " " + Z + " " + C);
 					
 			// 3. update UI
-			//ui.updateRegisters(PC, AC, X, Y, SR, SP);
-			//ui.updateFlags(N, V, G, B, D, I, Z, C);
+			ui.updateRegisters(PC, AC, X, Y, SR, SP);
+			ui.updateFlags(N, V, G, B, D, I, Z, C);
 			
-			// 4. wait for button press?			
+			// 4. wait for button press?	
+			while (ui.pressed == false) {
+				//System.out.println("waiting");
+	            try {
+	                Thread.sleep(200);                 //1000 milliseconds is one second.
+	            } catch(InterruptedException ex) {
+	                Thread.currentThread().interrupt();
+	            } 	
+			}
+			ui.pressed = false;	
 		}
 	}
 
