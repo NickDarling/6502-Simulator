@@ -541,7 +541,7 @@ public class CSC350P2 {
 			
 				// -------------------- PLA - Pull Accumulator --------------------	
 				case (byte) 0x68:
-					AC = memory[STARTING_STACK_LOCATION - (SP--)];	
+					AC = memory[STARTING_STACK_LOCATION - (--SP)];	
 					// update flags
 					Z = updateZFlag(AC);
 					N = updateNFlag(AC);					
@@ -549,7 +549,7 @@ public class CSC350P2 {
 					
 				// -------------------- PLP - Pull Processor Status --------------------	
 				case (byte) 0x28:
-					tmp = memory[STARTING_STACK_LOCATION - (SP--)];
+					tmp = memory[STARTING_STACK_LOCATION - (--SP)];
 					C = (((byte)tmp & 1) == 1)? true : false;
 					Z = (((byte)tmp & 2) == 1)? true : false;
 					I = (((byte)tmp & 4) == 1)? true : false;
@@ -1258,7 +1258,7 @@ public class CSC350P2 {
 					// INC - Increment Memory - Absolute (16-bit address)
 					data1 = memory[PC++];
 					data2 = memory[PC++];
-					memory[twoBytesToShort(data1, data2)]++;	
+					memory[twoBytesToShort(data2, data1)]++;	
 
 					// update flags
 					Z = updateZFlag(memory[twoBytesToShort(data2, data1)]);
@@ -1269,7 +1269,7 @@ public class CSC350P2 {
 					// INC - Increment Memory - Absolute,X (16-bit address)
 					data1 = memory[PC++];
 					data2 = memory[PC++];
-					memory[X + twoBytesToShort(data1, data2)]++;
+					memory[X + twoBytesToShort(data2, data1)]++;
 					
 					// update flags
 					Z = updateZFlag(memory[X + twoBytesToShort(data2, data1)]);
@@ -1318,7 +1318,7 @@ public class CSC350P2 {
 					// DEC - Decrement Memory - Absolute (16-bit address)
 					data1 = memory[PC++];
 					data2 = memory[PC++];
-					memory[twoBytesToShort(data1, data2)]--;	
+					memory[twoBytesToShort(data2, data1)]--;	
 
 					// update flags
 					Z = updateZFlag(memory[twoBytesToShort(data2, data1)]);
@@ -1329,7 +1329,7 @@ public class CSC350P2 {
 					// DEC - Decrement Memory - Absolute,X (16-bit address)
 					data1 = memory[PC++];
 					data2 = memory[PC++];
-					memory[X + twoBytesToShort(data1, data2)]--;
+					memory[X + twoBytesToShort(data2, data1)]--;
 					
 					// update flags
 					Z = updateZFlag(memory[X + twoBytesToShort(data2, data1)]);
@@ -1477,7 +1477,7 @@ public class CSC350P2 {
 					tmp = (byte)(memory[X + twoBytesToShort(data2, data1)] & 1); 	// bit 0
 					C = (tmp == 1)? true : false;	// check for carry
 					
-					memory[X + twoBytesToShort(data1, data2)] = (byte)((memory[X + twoBytesToShort(data1, data2)] >> 2) + (128 * tmp));
+					memory[X + twoBytesToShort(data2, data1)] = (byte)((memory[X + twoBytesToShort(data2, data1)] >> 2) + (128 * tmp));
 					
 					// update flags
 					Z = updateZFlag(memory[X + twoBytesToShort(data2, data1)]);
@@ -1533,7 +1533,7 @@ public class CSC350P2 {
 					tmp = (byte)(memory[twoBytesToShort(data2, data1)] & 128);	// old bit 7
 
 					memory[twoBytesToShort(data2, data1)] = (byte)(memory[twoBytesToShort(data2, data1)] << 1);
-					if (C) memory[twoBytesToShort(data1, data2)]++;		// bit 0 is filled with current value of the carry flag
+					if (C) memory[twoBytesToShort(data2, data1)]++;		// bit 0 is filled with current value of the carry flag
 
 					// update flags
 					C = (tmp == 128)? true : false; // check for carry
@@ -1652,18 +1652,18 @@ public class CSC350P2 {
 					data1 = memory[PC++];
 					data2 = memory[PC++];
 					
-					PC--;
-					memory[STARTING_STACK_LOCATION - (SP++ & 0xFF)] = (byte)(PC % 256);	// least significant byte
-					memory[STARTING_STACK_LOCATION - (SP++ & 0xFF)] = (byte)(PC / 256);	// most significant byte
-					
-					PC = (short)twoBytesToShort(data1, data2);
+					System.out.println("Storing: " + PC);
+					memory[STARTING_STACK_LOCATION - (SP++)] = (byte)(PC >> 8);	// most significant byte
+					memory[STARTING_STACK_LOCATION - (SP++)] = (byte)(PC);		// least significant byte
+					PC = (short)twoBytesToShort(data2, data1);
 					
 					break;
 				
 				// -------------------- RTS - Return from Subroutine --------------------	
 				case (byte) 0x60:
-					data1 = memory[STARTING_STACK_LOCATION - (SP++ & 0xFF)];
-					data2 = memory[STARTING_STACK_LOCATION - (SP++ & 0xFF)];
+					data1 = memory[STARTING_STACK_LOCATION - (--SP)];
+					data2 = memory[STARTING_STACK_LOCATION - (--SP)];
+		
 					PC = (short)twoBytesToShort(data2, data1);
 					break;
 					
@@ -1764,17 +1764,21 @@ public class CSC350P2 {
 				
 				// -------------------- BRK - Force Interrupt --------------------	
 				case (byte) 0x00:
-					memory[STARTING_STACK_LOCATION - (SP++)] = flagsToByte(N, V, G, B, D, I, Z, C);		
+					memory[STARTING_STACK_LOCATION - (SP++)] = flagsToByte(N, V, G, B, D, I, Z, C);	
 					memory[STARTING_STACK_LOCATION - (SP++)] = (byte)((PC >> 8) & 0xFF);	
-					memory[STARTING_STACK_LOCATION - (SP++)] = (byte)(PC & 0x00FF);			
-					
+					memory[STARTING_STACK_LOCATION - (SP++)] = (byte)(PC & 0x00FF);	
+							
+					B = true;
 					PC = (short)twoBytesToShort(memory[0xFFFF], memory[0xFFFE]);
 					break;
 				
 				// -------------------- RTI - Return from Interrupt --------------------	
 				case (byte) 0x40:
+					data1 = memory[STARTING_STACK_LOCATION - (--SP)];
+					data2 = memory[STARTING_STACK_LOCATION - (--SP)];	
+					
 					// pull processor status
-					tmp = memory[STARTING_STACK_LOCATION - (SP--)];
+					tmp = memory[STARTING_STACK_LOCATION - (--SP)];
 					C = (((byte)tmp & 1) == 1)? true : false;
 					Z = (((byte)tmp & 2) == 1)? true : false;
 					I = (((byte)tmp & 4) == 1)? true : false;
@@ -1782,10 +1786,7 @@ public class CSC350P2 {
 					B = (((byte)tmp & 16) == 1)? true : false;
 					G = (((byte)tmp & 32) == 1)? true : false;
 					V = (((byte)tmp & 64) == 1)? true : false;
-					N = (((byte)tmp & 128) == 1)? true : false;		
-					
-					data1 = memory[STARTING_STACK_LOCATION - (SP--)];
-					data2 = memory[STARTING_STACK_LOCATION - (SP--)];				
+					N = (((byte)tmp & 128) == 1)? true : false;				
 					
 					PC = (short)twoBytesToShort(data2, data1);
 					break;	

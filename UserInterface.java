@@ -272,7 +272,7 @@ public class UserInterface extends JFrame {
 	chooser.showOpenDialog(null);
 	File f = chooser.getSelectedFile();
 	String filename = f.getAbsolutePath();
-
+    
 	try {
 		FileReader reader = new FileReader(filename);
 		BufferedReader br = new BufferedReader(reader);
